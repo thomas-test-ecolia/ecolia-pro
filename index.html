@@ -846,8 +846,11 @@ async function doRegister(){
   const {data,error}=await sb.auth.signUp({email,password:pw});
   if(error){err.textContent=error.message==='User already registered'?'Un compte existe déjà avec cet email.':error.message;err.classList.add('show');btn.disabled=false;btn.textContent='Créer mon compte';return;}
 
-  // Créer le profil
-  await sb.from('profiles').insert({id:data.user.id,identifiant,prenom,nom,age,role:'eleve'});
+  // Créer le profil avec email
+  await sb.from('profiles').insert({id:data.user.id,identifiant,prenom,nom,age,role:'eleve',email});
+  
+  // Créer un abonnement actif par défaut
+  await sb.from('abonnements').insert({user_id:data.user.id,statut:'actif',message:''});
 
   suc.textContent='Compte créé avec succès ! Tu peux maintenant te connecter.';
   suc.classList.add('show');
