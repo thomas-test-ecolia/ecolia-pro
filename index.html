@@ -703,6 +703,15 @@ window.updateExpiry = updateExpiry;
 window.refreshAdmin = refreshAdmin;
 window.addEleve = addEleve;
 
+// Fix logout for innerHTML context
+function adminLogout(){
+  sb.auth.signOut().then(()=>{ 
+    currentUser=null; currentProfile=null;
+    location.reload(); 
+  });
+}
+window.adminLogout = adminLogout;
+
 async function addEleve(){
   const email = document.getElementById('new-eleve-email')?.value?.trim();
   const expiry = document.getElementById('new-eleve-expiry')?.value;
@@ -965,9 +974,7 @@ function renderSidebar(){
       {id:'depenses',label:'Dépenses',icon:'wallet',badge:D.depenses.length},
       {id:'kpifb',label:'KPI Facebook',icon:'fb'},
     ]},
-    {section:'Formation',items:[
-      {id:'formation',label:'Modules',icon:'book'},
-    ]},
+
     {section:'Mon Entreprise',items:[
       {id:'factures',label:'Factures & Devis',icon:'invoice',badge:D.factures?D.factures.length:0},
       {id:'profil',label:'Mon profil',icon:'settings'},
@@ -1042,31 +1049,86 @@ function getMonthClients(){
 
 function pageDashboard(){
   const now = new Date();
-  const tCA = getTotalCA(); // Somme CA de tous les clients
-  const caMonthly = getMonthCA(); // CA des clients du mois
+  const tCA = getTotalCA();
+  const caMonthly = getMonthCA();
+  const caMonthlyPaye = D.interventions.filter(i=>{
+    const prefix = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    return i.date&&i.date.startsWith(prefix)&&i.statut_paiement==='paye';
+  }).reduce((s,i)=>s+(i.montant||0),0);
+  const caMonthlyAttente = D.interventions.filter(i=>{
+    const prefix = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    return i.date&&i.date.startsWith(prefix)&&i.statut_paiement!=='paye';
+  }).reduce((s,i)=>s+(i.montant||0),0);
   const tDep = D.depenses.reduce((s,d)=>s+(d.montant||0),0);
   const fbDep = D.kpis.reduce((s,k)=>s+(k.depenses||0),0);
   const totalDep = tDep + fbDep;
-  const urssaf = Math.round(tCA * (S.tauxURSSAF||22) / 100);
-  const net = tCA - totalDep - urssaf;
+  const tauxURSSAF = S.tauxURSSAF||22;
+  const urssafMonthly = Math.round(caMonthly * tauxURSSAF / 100);
+  const depMonthly = D.depenses.filter(d=>{
+    const prefix = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    return d.date&&d.date.startsWith(prefix);
+  }).reduce((s,d)=>s+(d.montant||0),0);
+  const netMonthly = caMonthlyPaye - depMonthly - urssafMonthly;
   const monthClients = getMonthClients();
-  const weekClients = getWeekClients();
   const prenom = currentProfile?.prenom||'';
-  return`<div class="topbar"><div class="page-title">Bonjour, ${prenom} 👋</div><button class="btn primary" onclick="nav('crm')">+ Nouveau client</button></div>
-  <div class="stats-grid cols4">
-    <div class="stat-card"><div class="stat-label">Clients totaux</div><div class="stat-value">${D.clients.length}</div><div class="stat-sub">${D.clients.filter(c=>c.type_client==='pro').length} pro · ${D.clients.filter(c=>c.type_client!=='pro').length} particuliers</div></div>
-    <div class="stat-card"><div class="stat-label">CA mensuel (factures)</div><div class="stat-value">${caMonthly.toFixed(0)}€</div><div class="stat-sub">${now.toLocaleString('fr-FR',{month:'long'})} · ${monthClients.length} client${monthClients.length>1?'s':''}</div></div>
-    <div class="stat-card"><div class="stat-label">CA total (factures)</div><div class="stat-value">${tCA.toFixed(0)}€</div><div class="stat-sub">Toutes factures émises</div></div>
-    <div class="stat-card"><div class="stat-label">Bénéfice net estimé</div><div class="stat-value">${net.toFixed(0)}€</div><div class="stat-sub">Après charges + URSSAF ${S.tauxURSSAF||22}%</div></div>
+
+  // Graphique CA 6 derniers mois
+  const months6 = [];
+  for(let i=5;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const y=d.getFullYear(), m=d.getMonth();
+    const ca = getMonthCA(y,m);
+    const paye = D.interventions.filter(iv=>{
+      const prefix=y+'-'+String(m+1).padStart(2,'0');
+      return iv.date&&iv.date.startsWith(prefix)&&iv.statut_paiement==='paye';
+    }).reduce((s,iv)=>s+(iv.montant||0),0);
+    months6.push({label:d.toLocaleString('fr-FR',{month:'short'}),ca,paye});
+  }
+  const maxCA = Math.max(...months6.map(m=>m.ca), 1);
+  const chartBars = months6.map(m=>{
+    const h = Math.round((m.ca/maxCA)*100);
+    const hp = Math.round((m.paye/maxCA)*100);
+    const isCur = m.label===now.toLocaleString('fr-FR',{month:'short'});
+    return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;gap:4px">
+      <div style="font-size:10px;color:var(--blue);font-weight:500">${m.ca>0?m.ca.toFixed(0)+'€':''}</div>
+      <div style="width:100%;display:flex;flex-direction:column;justify-content:flex-end;height:80px;gap:1px">
+        <div style="width:100%;background:var(--green-mid);border-radius:3px 3px 0 0;height:${hp}%;min-height:${hp>0?2:0}px;opacity:0.9"></div>
+        <div style="width:100%;background:${isCur?'var(--blue)':'var(--blue-mid)'};border-radius:${hp>0?'0':'3px 3px'} 0 0;height:${h-hp}%;min-height:${(h-hp)>0?2:0}px;opacity:${isCur?1:0.6}"></div>
+      </div>
+      <div style="font-size:11px;color:${isCur?'var(--blue)':'var(--text-secondary)'};font-weight:${isCur?600:400}">${m.label}</div>
+    </div>`;
+  }).join('');
+
+  return`<div class="topbar"><div class="page-title">Bonjour, ${prenom} 👋</div><button class="btn primary" onclick="nav('prestations_hist')">+ Prestation</button></div>
+
+  <div class="stats-grid cols4" style="margin-bottom:1rem">
+    <div class="stat-card"><div class="stat-label">CA total</div><div class="stat-value">${tCA.toFixed(0)}€</div><div class="stat-sub">Toutes prestations</div></div>
+    <div class="stat-card"><div class="stat-label">CA mensuel facturé</div><div class="stat-value">${caMonthly.toFixed(0)}€</div><div class="stat-sub">${now.toLocaleString('fr-FR',{month:'long'})} · ${monthClients.length} clients</div></div>
+    <div class="stat-card"><div class="stat-label">✅ Encaissé ce mois</div><div class="stat-value" style="color:var(--green-dark)">${caMonthlyPaye.toFixed(0)}€</div><div class="stat-sub">⏳ En attente : ${caMonthlyAttente.toFixed(0)}€</div></div>
+    <div class="stat-card"><div class="stat-label">Bénéfice net mensuel</div><div class="stat-value" style="color:${netMonthly>=0?'var(--green-dark)':'var(--red-mid)'}">${netMonthly.toFixed(0)}€</div><div class="stat-sub">Sur CA encaissé · URSSAF ${tauxURSSAF}%</div></div>
   </div>
-  <div class="two-col">
-    <div class="card"><div class="card-head"><span class="card-title">Derniers clients</span><button class="btn sm" onclick="nav('crm')">Voir tout</button></div>
-    <table><thead><tr><th>Client</th><th>CA total</th><th>Statut</th></tr></thead><tbody>
-    ${D.clients.length===0?`<tr><td colspan="3" class="empty">Aucun client pour l'instant</td></tr>`:D.clients.slice(-5).reverse().map(c=>`<tr><td><strong>${c.name}</strong></td><td class="td-right">${getClientCA(c.name).toFixed(0)}€</td><td>${pSt(c.status)}</td></tr>`).join('')}
-    </tbody></table></div>
-    <div class="card"><div class="card-head"><span class="card-title">Progression formation</span></div>
-    ${MODULES.map(m=>`<div class="progress-row"><span class="prog-label">${m.title}</span><div class="prog-bar-wrap"><div class="prog-bar" style="width:${m.progress}%"></div></div><span class="prog-pct">${m.progress}%</span></div>`).join('')}
+
+  <!-- Graphique CA -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-head">
+      <span class="card-title">Évolution du CA — 6 derniers mois</span>
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--text-secondary)">
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--blue-mid);border-radius:2px;margin-right:4px"></span>Facturé</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:var(--green-mid);border-radius:2px;margin-right:4px"></span>Encaissé</span>
+      </div>
     </div>
+    <div style="padding:1rem">
+      <div style="display:flex;gap:6px;align-items:flex-end;height:120px">
+        ${chartBars}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><span class="card-title">Derniers clients</span><button class="btn sm" onclick="nav('crm')">Voir tout</button></div>
+    <table><thead><tr><th>Client</th><th>Type</th><th class="td-right">CA total</th><th>Statut</th></tr></thead><tbody>
+    ${D.clients.length===0?`<tr><td colspan="4" class="empty">Aucun client pour l'instant</td></tr>`:D.clients.slice(-5).reverse().map(c=>`<tr><td><strong>${c.name}</strong></td><td style="font-size:11px;color:${c.type_client==='pro'?'var(--blue)':'var(--text-secondary)'}">${c.type_client==='pro'?'🏢 Pro':'👤 Particulier'}</td><td class="td-right">${getClientCA(c.name).toFixed(0)}€</td><td>${pSt(c.status)}</td></tr>`).join('')}
+    </tbody></table>
   </div>`;
 }
 
@@ -1286,27 +1348,30 @@ function pagePrestationsHist(){
     <button class="btn primary" onclick="openModal('intervention')">+ Ajouter une prestation</button>
   </div>
 
-  <div style="display:flex;border-bottom:0.5px solid var(--gray-border);margin-bottom:1rem">
+  <div style="display:flex;border-bottom:0.5px solid var(--gray-border);margin-bottom:1rem;overflow-x:auto">
     <div style="${tabStyle('semaine')}" onclick="S.prestView='semaine';renderPage()">Cette semaine</div>
     <div style="${tabStyle('mois')}" onclick="S.prestView='mois';renderPage()">Ce mois</div>
+    <div style="${tabStyle('historique')}" onclick="S.prestView='historique';renderPage()">Historique semaines</div>
     <div style="${tabStyle('tout')}" onclick="S.prestView='tout';renderPage()">Tout</div>
   </div>
 
-  <div class="stats-grid cols4" style="margin-bottom:1rem">
+  ${view==='historique' ? renderWeeklyHistory() : ''}
+
+  ${view!=='historique' ? `<div class="stats-grid cols4" style="margin-bottom:1rem">
     <div class="stat-card"><div class="stat-label">Prestations</div><div class="stat-value">${items.length}</div></div>
     <div class="stat-card"><div class="stat-label">CA total</div><div class="stat-value">${caView.toFixed(0)}€</div></div>
     <div class="stat-card"><div class="stat-label">✅ Encaissé</div><div class="stat-value" style="color:var(--green-dark)">${caPaye.toFixed(0)}€</div></div>
     <div class="stat-card"><div class="stat-label">⏳ En attente</div><div class="stat-value" style="color:var(--amber-dark)">${caAttente.toFixed(0)}€</div></div>
-  </div>
+  </div>` : ''}
 
-  <!-- Filtre statut paiement -->
+  ${view!=='historique' ? `<!-- Filtre statut paiement -->
   <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
     <span onclick="S.prestStatut='tous';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${(S.prestStatut||'tous')==='tous'?'var(--blue)':'var(--bg-primary)'};color:${(S.prestStatut||'tous')==='tous'?'white':'var(--text-secondary)'}">Tous</span>
     <span onclick="S.prestStatut='attente';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${S.prestStatut==='attente'?'var(--amber-dark)':'var(--bg-primary)'};color:${S.prestStatut==='attente'?'white':'var(--text-secondary)'}">⏳ En attente</span>
     <span onclick="S.prestStatut='paye';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${S.prestStatut==='paye'?'var(--green-mid)':'var(--bg-primary)'};color:${S.prestStatut==='paye'?'white':'var(--text-secondary)'}">✅ Payé</span>
-  </div>
+  </div>` : ''}
 
-  <div class="card">
+  ${view!=='historique' ? `<div class="card">
     <div class="tbl-wrap"><table>
       <thead><tr><th>Date</th><th>Client</th><th>Véhicule</th><th>Prestation</th><th>Règlement</th><th class="td-right">Montant</th><th>Statut</th><th></th></tr></thead>
       <tbody>
@@ -1331,7 +1396,7 @@ function pagePrestationsHist(){
         </tr>`).join('')}
       </tbody>
     </table></div>
-  </div>`;
+  </div>` : ''}`;
 }
 
 function mIntervention(){
@@ -1483,6 +1548,72 @@ function editIntervention(id){
   S.form._clientName = i.client_name;
   $('modal-content').innerHTML = mIntervention();
   $('modal-overlay').classList.add('open');
+}
+
+function renderWeeklyHistory(){
+  // Group interventions by week
+  const weeks = {};
+  D.interventions.forEach(i=>{
+    if(!i.date) return;
+    const d = new Date(i.date);
+    const day = d.getDay()===0?6:d.getDay()-1;
+    const weekStart = new Date(d.getFullYear(),d.getMonth(),d.getDate()-day);
+    const key = weekStart.toISOString().slice(0,10);
+    if(!weeks[key]) weeks[key]={start:weekStart,items:[]};
+    weeks[key].items.push(i);
+  });
+  const sortedWeeks = Object.keys(weeks).sort((a,b)=>b.localeCompare(a));
+  if(sortedWeeks.length===0) return '<div style="padding:2rem;text-align:center;color:var(--text-tertiary)">Aucune prestation enregistrée</div>';
+
+  return sortedWeeks.map(key=>{
+    const w = weeks[key];
+    const weekEnd = new Date(w.start.getTime()+6*24*60*60*1000);
+    const label = w.start.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' – '+weekEnd.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
+    const ca = w.items.reduce((s,i)=>s+(i.montant||0),0);
+    const paye = w.items.filter(i=>i.statut_paiement==='paye').reduce((s,i)=>s+(i.montant||0),0);
+    const attente = ca - paye;
+    const now = new Date();
+    const thisWeekStart = new Date(now.getFullYear(),now.getMonth(),now.getDate()-(now.getDay()===0?6:now.getDay()-1));
+    const isCurrent = key===thisWeekStart.toISOString().slice(0,10);
+    return `<div class="card" style="margin-bottom:1rem;${isCurrent?'border:1.5px solid var(--blue)':''}">
+      <div class="card-head">
+        <span class="card-title">${isCurrent?'📍 ':''} Semaine du ${label}</span>
+        <div style="display:flex;gap:12px;font-size:12px">
+          <span style="color:var(--blue);font-weight:600">${ca.toFixed(0)}€</span>
+          <span style="color:var(--green-dark)">✅ ${paye.toFixed(0)}€</span>
+          <span style="color:var(--amber-dark)">⏳ ${attente.toFixed(0)}€</span>
+        </div>
+      </div>
+      <div style="padding:0.5rem 0;border-top:0.5px solid var(--gray-border)">
+        <div style="display:flex;gap:16px;padding:8px 1rem;font-size:12px;color:var(--text-secondary)">
+          <span>${w.items.length} prestation${w.items.length>1?'s':''}</span>
+          <span>CA: <strong>${ca.toFixed(0)}€</strong></span>
+          <span>Encaissé: <strong style="color:var(--green-dark)">${paye.toFixed(0)}€</strong></span>
+          <span>En attente: <strong style="color:var(--amber-dark)">${attente.toFixed(0)}€</strong></span>
+        </div>
+        <table style="width:100%"><thead><tr style="background:var(--bg-secondary)">
+          <th style="padding:6px 1rem;text-align:left;font-size:11px;color:var(--text-secondary);font-weight:500">Date</th>
+          <th style="padding:6px 8px;text-align:left;font-size:11px;color:var(--text-secondary);font-weight:500">Client</th>
+          <th style="padding:6px 8px;text-align:left;font-size:11px;color:var(--text-secondary);font-weight:500">Prestation</th>
+          <th style="padding:6px 8px;text-align:right;font-size:11px;color:var(--text-secondary);font-weight:500">Montant</th>
+          <th style="padding:6px 8px;text-align:center;font-size:11px;color:var(--text-secondary);font-weight:500">Statut</th>
+        </tr></thead><tbody>
+          ${w.items.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(i=>`<tr style="border-top:0.5px solid var(--gray-border)">
+            <td style="padding:8px 1rem;font-size:12px;color:var(--text-secondary)">${i.date}</td>
+            <td style="padding:8px;font-size:12px;font-weight:500">${i.client_name||'—'}</td>
+            <td style="padding:8px;font-size:12px;color:var(--text-secondary)">${i.prestation||'—'}</td>
+            <td style="padding:8px;text-align:right;font-size:12px;font-weight:600;color:var(--blue)">${(i.montant||0).toFixed(0)}€</td>
+            <td style="padding:8px;text-align:center">
+              ${i.statut_paiement==='paye'
+                ? '<span style="font-size:10px;background:var(--green-light);color:var(--green-dark);padding:2px 8px;border-radius:100px;font-weight:600">✅ Payé</span>'
+                : '<span style="font-size:10px;background:var(--amber-light);color:var(--amber-dark);padding:2px 8px;border-radius:100px;font-weight:600">⏳ Attente</span>'
+              }
+            </td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function togglePaiement(id, newStatut){
