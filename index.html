@@ -537,7 +537,8 @@ const ICONS={
 // PANNEAU ADMIN
 // ═══════════════════════════════════
 function renderAdmin(){
-  $('loading').style.display='none';
+  const loadingEl = $('loading');
+  if(loadingEl) loadingEl.style.display='none';
   const mn=$('mobile-nav');if(mn)mn.style.display='none';
   const ad = window.adminData||{profiles:[],subs:[]};
 
@@ -565,7 +566,7 @@ function renderAdmin(){
           <div style="font-size:18px;font-weight:700">🛡️ Panneau Admin — Ecolia Pro</div>
           <div style="font-size:12px;opacity:0.8">Connecté en tant que ${currentUser.email}</div>
         </div>
-        <button onclick="sb.auth.signOut().then(()=>location.reload())" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">Déconnexion</button>
+        <button onclick="adminLogout()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">Déconnexion</button>
       </div>
 
       <div style="max-width:1100px;margin:0 auto;padding:2rem">
@@ -612,7 +613,7 @@ function renderAdmin(){
                     const isSusp = statut==='suspendu';
                     return `<tr style="border-bottom:0.5px solid #f0f0f0">
                       <td style="padding:12px 16px"><strong>${p.prenom||''} ${p.nom||''}</strong><br><span style="font-size:11px;color:#999">@${p.identifiant||'—'}</span></td>
-                      <td style="padding:12px 16px;color:#666">${p.email||'—'}</td>
+                      <td style="padding:12px 16px;color:#666">${p.email||p.identifiant||'—'}</td>
                       <td style="padding:12px 16px;color:#666">${p.created_at?p.created_at.slice(0,10):'—'}</td>
                       <td style="padding:12px 16px">
                         <input type="date" value="${expiry}" onchange="updateExpiry('${p.id}',this.value)" style="border:0.5px solid #ddd;border-radius:6px;padding:4px 8px;font-size:12px">
@@ -657,6 +658,10 @@ function renderAdmin(){
     </div>`;
 }
 
+function adminLogout(){
+  sb.auth.signOut().then(()=>location.reload());
+}
+
 async function toggleAccess(userId, newStatut, message){
   const existing = (window.adminData.subs||[]).find(s=>s.user_id===userId);
   if(existing){
@@ -687,9 +692,16 @@ async function updateExpiry(userId, date){
 }
 
 async function refreshAdmin(){
-  await loadAdminData();
-  renderAdmin();
+  await loadAdminData(); // renderAdmin called inside
 }
+
+// Make admin functions globally accessible
+window.adminLogout = adminLogout;
+window.toggleAccess = toggleAccess;
+window.promptSuspend = promptSuspend;
+window.updateExpiry = updateExpiry;
+window.refreshAdmin = refreshAdmin;
+window.addEleve = addEleve;
 
 async function addEleve(){
   const email = document.getElementById('new-eleve-email')?.value?.trim();
@@ -874,10 +886,8 @@ async function loadAdminData(){
       sb.from('profiles').select('*').limit(200),
       sb.from('abonnements').select('*').limit(200),
     ]);
-    // Enrichir les profils avec l'email de currentUser si manquant
-    const profilesData = profiles.data||[];
     window.adminData = {
-      profiles: profilesData,
+      profiles: profiles.data||[],
       subs: subs.data||[]
     };
   } catch(e) {
@@ -898,7 +908,7 @@ function renderSuspended(msg){
         <h2 style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:0.5rem">Accès suspendu</h2>
         <p style="color:#666;font-size:14px;line-height:1.6;margin-bottom:1.5rem">${msg||'Ton accès à Ecolia Pro a été suspendu. Contacte Thomas pour régulariser ta situation.'}</p>
         <a href="mailto:contact.ecolia76@gmail.com" style="display:inline-block;background:#185FA5;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">Contacter Thomas</a>
-        <div style="margin-top:1rem"><button onclick="sb.auth.signOut().then(()=>location.reload())" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer">Se déconnecter</button></div>
+        <div style="margin-top:1rem"><button onclick="adminLogout()" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer">Se déconnecter</button></div>
       </div>
     </div>`;
 }
