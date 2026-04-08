@@ -852,8 +852,7 @@ async function loadProfileAndStart(){
 
   // Check if admin
   if(currentUser.email === ADMIN_EMAIL){
-    await loadAdminData();
-    renderAdmin();
+    await loadAdminData(); // renderAdmin is called inside loadAdminData
     return;
   }
 
@@ -870,14 +869,22 @@ async function loadProfileAndStart(){
 
 async function loadAdminData(){
   showLoading('Chargement panneau admin...');
-  const [profiles, subs] = await Promise.all([
-    sb.from('profiles').select('*'),
-    sb.from('abonnements').select('*'),
-  ]);
-  window.adminData = {
-    profiles: profiles.data||[],
-    subs: subs.data||[]
-  };
+  try {
+    const [profiles, subs] = await Promise.all([
+      sb.from('profiles').select('*').limit(200),
+      sb.from('abonnements').select('*').limit(200),
+    ]);
+    // Enrichir les profils avec l'email de currentUser si manquant
+    const profilesData = profiles.data||[];
+    window.adminData = {
+      profiles: profilesData,
+      subs: subs.data||[]
+    };
+  } catch(e) {
+    console.error('Admin load error:', e);
+    window.adminData = { profiles: [], subs: [] };
+  }
+  renderAdmin();
 }
 
 function renderSuspended(msg){
