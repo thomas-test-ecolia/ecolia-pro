@@ -1962,6 +1962,19 @@ function mKpi(){return`<div class="modal-title">Nouvelle semaine — KPI Faceboo
 // ═══════════════════════════════════
 // CRUD — Supabase
 // ═══════════════════════════════════
+function mNewDoc(){
+  return mIntervention(); // redirection vers le modal intervention
+}
+
+function mPrestation(){
+  const isEdit = !!S.form.editPrestId;
+  return`<div class="modal-title">${isEdit?'Modifier la prestation':'Nouvelle prestation type'}</div>
+  <div class="field"><label>Nom de la prestation *</label><input value="${S.form.nom||''}" oninput="S.form.nom=this.value" placeholder="ex: Nettoyage complet premium"></div>
+  <div class="field"><label>Description</label><textarea oninput="S.form.description=this.value" placeholder="Détail inclus dans la prestation" style="min-height:80px">${S.form.description||''}</textarea></div>
+  <div class="field"><label>Prix HT (€) *</label><input type="number" value="${S.form.prix||''}" oninput="S.form.prix=this.value" placeholder="ex: 150"></div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="savePrestation()">${isEdit?'Modifier':'Ajouter'}</button></div>`;
+}
+
 function openModal(t){
   S.modal=t;
   S.form={type:'nettoyage',categorie:CAT_DEP[0],moyen:MOYENS[0],status:'new',statut:'confirme',prenom:'',nom:'',adresse:'',prix:'',telephone:'',notes:'',docType:'facture',lignes:[{nom:'',description:'',quantite:1,prix:0}],tva:0,date:new Date().toISOString().slice(0,10)};
