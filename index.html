@@ -1314,6 +1314,9 @@ function pageClientDetail(clientId){
     ${c.email?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Email</span><strong>${c.email}</strong></div>`:''}
     ${c.adresse_postale?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Adresse</span><span>${c.adresse_postale}</span></div>`:''}
     ${c.vehicle?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Véhicule</span><span>${c.vehicle}</span></div>`:''}
+    ${c.ville?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Ville</span><span>📍 ${c.ville}</span></div>`:''}
+    ${c.prestation?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Prestation</span><span style="background:var(--blue-light);color:var(--blue-dark);padding:2px 8px;border-radius:100px;font-size:12px">🧹 ${c.prestation}</span></div>`:''}
+    ${c.disponibilite?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Disponibilité</span><span style="background:var(--amber-light);color:var(--amber-dark);padding:2px 8px;border-radius:100px;font-size:12px">⏰ ${c.disponibilite}</span></div>`:''}
     ${c.type_client?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Type</span><span>${c.type_client==='pro'?'🏢 Professionnel':'👤 Particulier'}</span></div>`:''}
     ${c.created_at?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Inscrit le</span><span>${c.created_at.slice(0,10)}</span></div>`:''}
     ${!c.phone&&!c.email&&!c.adresse_postale?`<div style="color:var(--text-tertiary)">Aucune information renseignée</div>`:''}
