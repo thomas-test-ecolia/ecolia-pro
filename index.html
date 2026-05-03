@@ -478,7 +478,15 @@ const EV_TYPES=['nettoyage','visite','coaching'];
 const EV_LABELS={nettoyage:'Nettoyage intérieur',exterieur:'Nettoyage extérieur',complet:'Nettoyage complet',ceramique:'Céramique',polish:'Polish',visite:'Visite estimative',coaching:'Coaching'};
 const CAT_DEP=['Produits nettoyage','Carburant','Matériel','Publicité','Formation','Assurance','Téléphone','Autre'];
 const MOYENS=['Carte bancaire','Virement bancaire','Espèces','Chèque','Prélèvement automatique'];
-const STATUTS=[{v:'done',l:'Payé'},{v:'pending',l:'En attente'},{v:'new',l:'Nouveau'}];
+const STATUTS=[
+  {v:'client',l:'✅ Client',color:'#2d7a2d',bg:'#e8f5e9'},
+  {v:'en_cours',l:'🔄 En cours',color:'#185FA5',bg:'#E6F1FB'},
+  {v:'tentative',l:'📞 Tentative de contact',color:'#633806',bg:'#FAEEDA'},
+  {v:'non_qualifie',l:'❌ Non qualifié',color:'#c0392b',bg:'#fde8e8'},
+  {v:'new',l:'🆕 Nouveau lead',color:'#666',bg:'#f5f5f5'},
+];
+function getStatutStyle(v){ return STATUTS.find(s=>s.v===v)||STATUTS[4]; }
+function pStLead(v){ const s=getStatutStyle(v); return `<span style="padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:${s.bg};color:${s.color}">${s.l}</span>`; }
 
 // ═══════════════════════════════════
 // STATE
@@ -486,7 +494,7 @@ const STATUTS=[{v:'done',l:'Payé'},{v:'pending',l:'En attente'},{v:'new',l:'Nou
 let currentUser = null;
 let currentProfile = null;
 let loginTab = 'login';
-let D = { events:[], clients:[], depenses:[], kpis:[], quizState:{}, factures:[], interventions:[], prestations:[
+let D = { events:[], clients:[], depenses:[], kpis:[], quizState:{}, factures:[], interventions:[], clientNotes:{}, tasks:[], prestations:[
   {id:1,nom:'Nettoyage intérieur',prix:80,description:'Aspirateur, shampoing, plastiques'},
   {id:2,nom:'Nettoyage extérieur',prix:60,description:'Lavage carrosserie, jantes, vitres'},
   {id:3,nom:'Nettoyage complet',prix:130,description:'Intérieur + extérieur complet'},
@@ -495,7 +503,7 @@ let D = { events:[], clients:[], depenses:[], kpis:[], quizState:{}, factures:[]
 ], profil:{siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#185FA5',iban:''}, nextFactureNum:1 };
 let S = {
   page:'dashboard', openModuleId:null, activeTab:'videos',
-  factureTab:'factures', tauxURSSAF:22, crmView:'tous', prestView:'semaine', prestStatut:'tous', crmClientId:null, newDoc:null, editDocId:null, formDoc:null,
+  factureTab:'factures', tauxURSSAF:22, crmView:'tous', prestView:'semaine', prestStatut:'tous', crmClientId:null, clientDetailTab:null, newDoc:null, editDocId:null, formDoc:null, histMoisKey:null, crmStatutFilter:'tous', crmSort:'alpha',
   comptaYear:new Date().getFullYear(), comptaMonth:new Date().getMonth(),
   cal:{year:new Date().getFullYear(),month:new Date().getMonth(),sel:{d:new Date().getDate(),m:new Date().getMonth(),y:new Date().getFullYear()}},
   modal:null, form:{}, crmQ:''
@@ -526,6 +534,7 @@ const ICONS={
   fb:`<svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="14" rx="3"/><path d="M9.5 4H8.5C7.7 4 7 4.7 7 5.5V7H5.5v2H7v5h2.5V9H11l.5-2H9.5V5.5c0-.3.2-.5.5-.5h1.5V4z" fill="white"/></svg>`,
   logout:`<svg style="width:14px;height:14px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M10 11l4-4-4-4M14 8H6"/></svg>`,
   calendar:`<svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1" y="2.5" width="14" height="12" rx="1.5"/><path d="M1 7h14M5 1v3M11 1v3"/></svg>`,
+  tasks:`<svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 8l2 2 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   invoice:`<svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M4 2h8a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M5 5h6M5 8h6M5 11h4" stroke-linecap="round"/></svg>`,
   settings:`<svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>`,
 };
@@ -956,9 +965,11 @@ function renderApp(){
   render();
   // Init Google API
   initGoogleAPI();
-  // Load factures and profil from localStorage
+  // Load factures, profil, notes and tasks from localStorage
   loadFactures();
   loadProfil();
+  loadClientNotes();
+  loadTasks();
 }
 
 function renderSidebar(){
@@ -967,6 +978,7 @@ function renderSidebar(){
     {section:'Principal',items:[
       {id:'dashboard',label:'Tableau de bord',icon:'grid'},
       {id:'crm',label:'CRM Clients',icon:'users',badge:D.clients.length,bc:'green'},
+      {id:'tasks_page',label:'Mes tâches',icon:'tasks',badge:(D.tasks||[]).filter(t=>!t.done&&t.date&&t.date<=new Date().toISOString().slice(0,10)).length||0,bc:'amber'},
       {id:'prestations_hist',label:'Mes prestations',icon:'calendar',badge:D.interventions.length},
     ]},
     {section:'Comptabilité',items:[
@@ -1060,8 +1072,7 @@ function pageDashboard(){
     return i.date&&i.date.startsWith(prefix)&&i.statut_paiement!=='paye';
   }).reduce((s,i)=>s+(i.montant||0),0);
   const tDep = D.depenses.reduce((s,d)=>s+(d.montant||0),0);
-  const fbDep = D.kpis.reduce((s,k)=>s+(k.depenses||0),0);
-  const totalDep = tDep + fbDep;
+  const totalDep = tDep;
   const tauxURSSAF = S.tauxURSSAF||22;
   const urssafMonthly = Math.round(caMonthly * tauxURSSAF / 100);
   const depMonthly = D.depenses.filter(d=>{
@@ -1099,7 +1110,8 @@ function pageDashboard(){
     </div>`;
   }).join('');
 
-  return`<div class="topbar"><div class="page-title">Bonjour, ${prenom} 👋</div><button class="btn primary" onclick="nav('prestations_hist')">+ Prestation</button></div>
+  const tasksDue = (D.tasks||[]).filter(t=>!t.done&&t.date&&t.date<=now.toISOString().slice(0,10));
+  return`<div class="topbar"><div class="page-title">Bonjour, ${prenom} 👋</div><div class="btn-group">${tasksDue.length>0?`<button class="btn" onclick="nav('tasks_page')" style="color:var(--amber-dark)">📋 ${tasksDue.length} tâche${tasksDue.length>1?'s':''} du jour</button>`:''}<button class="btn primary" onclick="nav('prestations_hist')">+ Prestation</button></div></div>
 
   <div class="stats-grid cols4" style="margin-bottom:1rem">
     <div class="stat-card"><div class="stat-label">CA total</div><div class="stat-value">${tCA.toFixed(0)}€</div><div class="stat-sub">Toutes prestations</div></div>
@@ -1124,11 +1136,29 @@ function pageDashboard(){
     </div>
   </div>
 
+  <!-- Tâches à venir -->
   <div class="card">
-    <div class="card-head"><span class="card-title">Derniers clients</span><button class="btn sm" onclick="nav('crm')">Voir tout</button></div>
-    <table><thead><tr><th>Client</th><th>Type</th><th class="td-right">CA total</th><th>Statut</th></tr></thead><tbody>
-    ${D.clients.length===0?`<tr><td colspan="4" class="empty">Aucun client pour l'instant</td></tr>`:D.clients.slice(-5).reverse().map(c=>`<tr><td><strong>${c.name}</strong></td><td style="font-size:11px;color:${c.type_client==='pro'?'var(--blue)':'var(--text-secondary)'}">${c.type_client==='pro'?'🏢 Pro':'👤 Particulier'}</td><td class="td-right">${getClientCA(c.name).toFixed(0)}€</td><td>${pSt(c.status)}</td></tr>`).join('')}
-    </tbody></table>
+    <div class="card-head">
+      <span class="card-title">Mes tâches</span>
+      <button class="btn sm" onclick="nav('tasks_page')">Voir tout</button>
+    </div>
+    ${(()=>{
+      const now2 = new Date().toISOString().slice(0,10);
+      const pending = (D.tasks||[]).filter(t=>!t.done).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+      if(pending.length===0) return '<div style="padding:1.5rem;text-align:center;color:var(--text-tertiary);font-size:13px">Aucune tâche en cours 🎉</div>';
+      return '<table><thead><tr><th>Tâche</th><th>Client</th><th>Échéance</th><th></th></tr></thead><tbody>'+
+        pending.slice(0,6).map(t=>{
+          const isOverdue = t.date&&t.date<now2;
+          const isToday = t.date===now2;
+          return '<tr>'+
+            '<td><strong>'+t.titre+'</strong></td>'+
+            '<td style="color:var(--text-secondary)">'+( t.client_name||'—')+'</td>'+
+            '<td><span style="font-size:11px;padding:2px 8px;border-radius:100px;background:'+(isOverdue?'var(--red-light)':isToday?'var(--amber-light)':'var(--bg-secondary)')+';color:'+(isOverdue?'var(--red-mid)':isToday?'var(--amber-dark)':'var(--text-secondary)')+'">'+( t.date||'—')+'</span></td>'+
+            '<td><input type="checkbox" onchange="toggleTask(\''+ t.id+'\');render()" style="cursor:pointer"></td>'+
+          '</tr>';
+        }).join('')+
+      '</tbody></table>';
+    })()}
   </div>`;
 }
 
@@ -1190,6 +1220,41 @@ function pageCalendar(){
   </div>`;
 }
 
+function pageTasksAll(){
+  const now = new Date().toISOString().slice(0,10);
+  const allTasks = (D.tasks||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const pending = allTasks.filter(t=>!t.done);
+  const overdue = pending.filter(t=>t.date&&t.date<now);
+  const today = pending.filter(t=>t.date===now);
+  const upcoming = pending.filter(t=>t.date>now||!t.date);
+  const done = allTasks.filter(t=>t.done);
+
+  const renderSection = (title, tasks, color) => tasks.length===0?'':`
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:${color};margin:1rem 0 0.5rem">${title} (${tasks.length})</div>
+    ${tasks.map(t=>`
+      <div style="background:white;border:0.5px solid var(--gray-border);border-radius:var(--radius-md);padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:6px;opacity:${t.done?0.6:1}">
+        <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" style="width:16px;height:16px;cursor:pointer;flex-shrink:0">
+        <div style="flex:1;cursor:pointer" onclick="S.crmClientId='${t.client_id}';S.clientDetailTab='taches';nav('crm')">
+          <div style="font-size:13px;font-weight:500;text-decoration:${t.done?'line-through':'none'}">${t.titre}</div>
+          <div style="font-size:11px;color:var(--text-secondary)">${t.client_name||'—'} ${t.date?'· '+t.date:''}</div>
+        </div>
+        <span class="del-btn" onclick="deleteTask('${t.id}')">×</span>
+      </div>`).join('')}`;
+
+  return`<div class="topbar"><div class="page-title">Mes tâches</div></div>
+  <div class="stats-grid cols3" style="margin-bottom:1rem">
+    <div class="stat-card"><div class="stat-label">En retard</div><div class="stat-value" style="color:var(--red-mid)">${overdue.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Aujourd'hui</div><div class="stat-value" style="color:var(--amber-dark)">${today.length}</div></div>
+    <div class="stat-card"><div class="stat-label">À venir</div><div class="stat-value" style="color:var(--blue)">${upcoming.length}</div></div>
+  </div>
+  ${pending.length===0&&done.length===0?`<div class="card" style="padding:2rem;text-align:center;color:var(--text-tertiary)">Aucune tâche — crée des rappels depuis les fiches clients !</div>`:''}
+  ${renderSection('🔴 En retard',overdue,'var(--red-mid)')}
+  ${renderSection('📅 Aujourd hui',today,'var(--amber-dark)')}
+  ${renderSection('🔵 À venir',upcoming,'var(--blue)')}
+  ${done.length>0?done.slice(0,5).map(t=>`<div style="background:white;border:0.5px solid var(--gray-border);border-radius:var(--radius-md);padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:6px;opacity:0.5"><input type="checkbox" checked onchange="toggleTask('${t.id}')" style="width:16px;height:16px;cursor:pointer;flex-shrink:0"><div style="flex:1"><div style="font-size:13px;text-decoration:line-through">${t.titre}</div><div style="font-size:11px;color:var(--text-secondary)">${t.client_name||'—'}</div></div><span class="del-btn" onclick="deleteTask('${t.id}')">×</span></div>`).join(''):''}`;
+}
+
+
 function pageClientDetail(clientId){
   const c = D.clients.find(x=>x.id===clientId||x.id==clientId);
   if(!c) return pageCRM();
@@ -1197,101 +1262,314 @@ function pageClientDetail(clientId){
     .filter(i=>i.client_name===c.name)
     .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const totalCA = clientInterv.reduce((s,i)=>s+(i.montant||0),0);
+  const clientNotes = (D.clientNotes||{})[c.id] || '';
+  const clientTasks = (D.tasks||[]).filter(t=>t.client_id===c.id||t.client_id==c.id);
+  const pendingTasks = clientTasks.filter(t=>!t.done);
+  const tab = S.clientDetailTab||'infos';
+  const st = getStatutStyle(c.status||'new');
+  const tabStyle = v => `padding:8px 16px;font-size:13px;cursor:pointer;font-weight:500;border-bottom:2px solid ${tab===v?'var(--blue)':'transparent'};color:${tab===v?'var(--blue)':'var(--text-secondary)'};margin-bottom:-1px`;
 
-  return`<div class="mod-back" onclick="S.crmClientId=null;render()">
+  return`<div class="mod-back" onclick="S.crmClientId=null;S.clientDetailTab=null;render()">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3L5 8l5 5"/></svg>
     Retour au CRM
   </div>
 
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
-    <div>
-      <h2 style="font-size:20px;font-weight:700;margin:0">${c.name}</h2>
-      <div style="font-size:13px;color:${c.type_client==='pro'?'var(--blue)':'var(--text-secondary)'};margin-top:4px">${c.type_client==='pro'?'🏢 Professionnel':'👤 Particulier'}</div>
-    </div>
-    <button class="btn" onclick="editClient('${c.id}')">✏️ Modifier la fiche</button>
-  </div>
-
-  <div class="stats-grid cols3" style="margin-bottom:1.5rem">
-    <div class="stat-card"><div class="stat-label">CA total</div><div class="stat-value" style="color:var(--blue)">${totalCA.toFixed(0)}€</div></div>
-    <div class="stat-card"><div class="stat-label">Nb interventions</div><div class="stat-value">${clientInterv.length}</div></div>
-    <div class="stat-card"><div class="stat-label">Panier moyen</div><div class="stat-value">${clientInterv.length>0?(totalCA/clientInterv.length).toFixed(0):'0'}€</div></div>
-  </div>
-
-  <div class="two-col">
-    <div class="card"><div class="card-head"><span class="card-title">Informations</span></div>
-      <div style="padding:1rem;display:flex;flex-direction:column;gap:10px">
-        ${c.phone?`<div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:var(--text-secondary);min-width:80px">Téléphone</span><strong>${c.phone}</strong></div>`:''}
-        ${c.email?`<div style="display:flex;gap:8px;align-items:center"><span style="font-size:12px;color:var(--text-secondary);min-width:80px">Email</span><strong>${c.email}</strong></div>`:''}
-        ${c.adresse_postale?`<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:12px;color:var(--text-secondary);min-width:80px">Adresse</span><span>${c.adresse_postale}</span></div>`:''}
-        ${c.notes?`<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:12px;color:var(--text-secondary);min-width:80px">Notes</span><span style="font-style:italic">${c.notes}</span></div>`:''}
-        ${!c.phone&&!c.email&&!c.adresse_postale&&!c.notes?`<div style="color:var(--text-tertiary);font-size:13px">Aucune information renseignée</div>`:''}
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;flex-wrap:wrap;gap:1rem">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">${(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div>
+        <h2 style="font-size:20px;font-weight:700;margin:0">${c.name}</h2>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <span style="padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:${st.bg};color:${st.color}">${st.l}</span>
+          ${c.created_at?`<span style="font-size:11px;color:var(--text-tertiary)">Inscrit le ${c.created_at.slice(0,10)}</span>`:''}
+        </div>
       </div>
     </div>
-
-    <div class="card"><div class="card-head"><span class="card-title">Historique des prestations</span></div>
-      ${clientInterv.length===0
-        ? `<div style="padding:1.5rem;text-align:center;color:var(--text-tertiary);font-size:13px">Aucune prestation enregistrée</div>`
-        : `<table><thead><tr><th>Date</th><th>Véhicule</th><th>Prestation</th><th>Règlement</th><th class="td-right">Montant</th></tr></thead>
-          <tbody>
-            ${clientInterv.map(i=>`<tr>
-              <td style="color:var(--text-secondary)">${i.date||'—'}</td>
-              <td>${i.vehicle||'—'}</td>
-              <td>${i.prestation||'—'}</td>
-              <td><span class="pill pill-blue" style="font-size:10px">${i.moyen_paiement||'—'}</span></td>
-              <td class="td-right"><strong style="color:var(--blue)">${(i.montant||0).toFixed(0)}€</strong></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>`
-      }
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="editClient('${c.id}')">✏️ Modifier</button>
+      ${c.phone?`<a href="sms:${c.phone}?body=Bonjour%20${encodeURIComponent(c.name.split(' ')[0])}%2C%20" class="btn" style="text-decoration:none">📱 SMS</a>`:''}
+      ${c.phone?`<a href="https://wa.me/33${c.phone.replace(/[^0-9]/g,'').slice(1)}?text=Bonjour%20${encodeURIComponent(c.name.split(' ')[0])}%2C%20" target="_blank" class="btn" style="text-decoration:none">💬 WhatsApp</a>`:''}
+      ${c.email?`<a href="mailto:${c.email}" class="btn" style="text-decoration:none">📧 Email</a>`:''}
     </div>
-  </div>`;
+  </div>
+
+  <div class="stats-grid cols3" style="margin-bottom:1rem">
+    <div class="stat-card"><div class="stat-label">CA total</div><div class="stat-value" style="color:var(--blue)">${totalCA.toFixed(0)}€</div></div>
+    <div class="stat-card"><div class="stat-label">Interventions</div><div class="stat-value">${clientInterv.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Tâches en attente</div><div class="stat-value" style="color:${pendingTasks.length>0?'var(--amber-dark)':'var(--green-dark)'}">${pendingTasks.length}</div></div>
+  </div>
+
+  <!-- Onglets -->
+  <div style="display:flex;border-bottom:0.5px solid var(--gray-border);margin-bottom:1rem">
+    <div style="${tabStyle('infos')}" onclick="S.clientDetailTab='infos';renderPage()">Informations</div>
+    <div style="${tabStyle('notes')}" onclick="S.clientDetailTab='notes';renderPage()">Notes</div>
+    <div style="${tabStyle('taches')}" onclick="S.clientDetailTab='taches';renderPage()">Tâches ${pendingTasks.length>0?`<span style="background:var(--amber-dark);color:white;border-radius:100px;font-size:10px;padding:1px 6px;margin-left:4px">${pendingTasks.length}</span>`:''}</div>
+    <div style="${tabStyle('prestations')}" onclick="S.clientDetailTab='prestations';renderPage()">Prestations</div>
+  </div>
+
+  <!-- Contenu onglet -->
+  ${tab==='infos'?`
+  <div class="card"><div style="padding:1rem;display:flex;flex-direction:column;gap:12px">
+    ${c.phone?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Téléphone</span><strong>${c.phone}</strong></div>`:''}
+    ${c.email?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Email</span><strong>${c.email}</strong></div>`:''}
+    ${c.adresse_postale?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Adresse</span><span>${c.adresse_postale}</span></div>`:''}
+    ${c.vehicle?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Véhicule</span><span>${c.vehicle}</span></div>`:''}
+    ${c.type_client?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Type</span><span>${c.type_client==='pro'?'🏢 Professionnel':'👤 Particulier'}</span></div>`:''}
+    ${c.created_at?`<div style="display:flex;gap:8px"><span style="font-size:12px;color:var(--text-secondary);min-width:100px">Inscrit le</span><span>${c.created_at.slice(0,10)}</span></div>`:''}
+    ${!c.phone&&!c.email&&!c.adresse_postale?`<div style="color:var(--text-tertiary)">Aucune information renseignée</div>`:''}
+  </div></div>`:''}
+
+  ${tab==='notes'?`
+  <div class="card" style="padding:1rem">
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Notes sur ce prospect / client (appels, remarques...)</div>
+    <textarea id="client-notes-area" style="width:100%;min-height:200px;padding:12px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit" placeholder="Ex: Appelé le 12/04 — pas répondu. Rappeler mercredi matin. Intéressé par le forfait Premium...">${clientNotes}</textarea>
+    <button class="btn primary" style="margin-top:8px" onclick="saveClientNote('${c.id}')">💾 Sauvegarder</button>
+  </div>`:''}
+
+  ${tab==='taches'?`
+  <div style="margin-bottom:1rem;display:flex;gap:8px">
+    <button class="btn primary" onclick="openTaskModal('${c.id}','${c.name}')">+ Nouvelle tâche</button>
+  </div>
+  ${clientTasks.length===0
+    ? `<div class="card" style="padding:2rem;text-align:center;color:var(--text-tertiary)">Aucune tâche — ajoute un rappel !</div>`
+    : `<div style="display:flex;flex-direction:column;gap:8px">
+        ${clientTasks.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(t=>`
+          <div style="background:white;border:0.5px solid ${t.done?'var(--gray-border)':'var(--amber-dark)'};border-radius:var(--radius-md);padding:12px 16px;display:flex;align-items:center;gap:12px;opacity:${t.done?0.6:1}">
+            <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')" style="width:16px;height:16px;cursor:pointer">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500;text-decoration:${t.done?'line-through':'none'}">${t.titre}</div>
+              ${t.date?`<div style="font-size:11px;color:${t.done?'var(--text-tertiary)':new Date(t.date)<new Date()?'var(--red-mid)':'var(--amber-dark)'}">📅 ${t.date}${new Date(t.date)<new Date()&&!t.done?' — EN RETARD':''}</div>`:''}
+            </div>
+            <span class="del-btn" onclick="deleteTask('${t.id}')">×</span>
+          </div>`).join('')}
+      </div>`
+  }`:''}
+
+  ${tab==='prestations'?`
+  <div class="card">
+    ${clientInterv.length===0
+      ? `<div style="padding:2rem;text-align:center;color:var(--text-tertiary)">Aucune prestation enregistrée</div>`
+      : `<table><thead><tr><th>Date</th><th>Véhicule</th><th>Prestation</th><th>Règlement</th><th class="td-right">Montant</th></tr></thead>
+        <tbody>
+          ${clientInterv.map(i=>`<tr>
+            <td style="color:var(--text-secondary)">${i.date||'—'}</td>
+            <td>${i.vehicle||'—'}</td>
+            <td>${i.prestation||'—'}</td>
+            <td><span class="pill pill-blue" style="font-size:10px">${i.moyen_paiement||'—'}</span></td>
+            <td class="td-right"><strong style="color:var(--blue)">${(i.montant||0).toFixed(0)}€</strong></td>
+          </tr>`).join('')}
+        </tbody></table>`
+    }
+  </div>`:''}`;
 }
 
-function pageCRM(){
-  if(S.crmClientId) return pageClientDetail(S.crmClientId);
+function saveClientNote(clientId){
+  const note = document.getElementById('client-notes-area')?.value||'';
+  if(!D.clientNotes) D.clientNotes = {};
+  D.clientNotes[clientId] = note;
+  try{ localStorage.setItem('ecolia_notes_'+currentUser.id, JSON.stringify(D.clientNotes)); }catch(e){}
+  // Show saved feedback
+  const btn = document.querySelector('[onclick*="saveClientNote"]');
+  if(btn){ const orig=btn.textContent; btn.textContent='✅ Sauvegardé !'; setTimeout(()=>btn.textContent=orig,2000); }
+}
+
+function loadClientNotes(){
+  try{
+    const saved = localStorage.getItem('ecolia_notes_'+currentUser.id);
+    if(saved) D.clientNotes = JSON.parse(saved);
+    else D.clientNotes = {};
+  }catch(e){ D.clientNotes={}; }
+}
+
+function openTaskModal(clientId, clientName){
+  S.form = { taskClientId: clientId, taskClientName: clientName, taskTitre:'', taskDate: new Date(Date.now()+86400000).toISOString().slice(0,10) };
+  $('modal-content').innerHTML = mTask();
+  $('modal-overlay').classList.add('open');
+}
+
+function mTask(){
+  return`<div class="modal-title">Nouvelle tâche — ${S.form.taskClientName}</div>
+  <div class="field"><label>Tâche *</label>
+    <input value="${S.form.taskTitre||''}" oninput="S.form.taskTitre=this.value" placeholder="ex: Rappeler demain matin, Envoyer devis, Relancer par SMS..." style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;box-sizing:border-box">
+  </div>
+  <div class="field"><label>Date d'échéance</label>
+    <input type="date" value="${S.form.taskDate||''}" oninput="S.form.taskDate=this.value">
+  </div>
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveTask()">Ajouter</button></div>`;
+}
+
+async function saveTask(){
+  if(!S.form.taskTitre?.trim()){ alert('Titre requis.'); return; }
+  const task = {
+    id: Date.now().toString(),
+    client_id: S.form.taskClientId,
+    client_name: S.form.taskClientName,
+    titre: S.form.taskTitre.trim(),
+    date: S.form.taskDate||'',
+    done: false,
+    created_at: new Date().toISOString().slice(0,10)
+  };
+  if(!D.tasks) D.tasks = [];
+  D.tasks.push(task);
+  try{ localStorage.setItem('ecolia_tasks_'+currentUser.id, JSON.stringify(D.tasks)); }catch(e){}
+  closeModal();
+  renderPage();
+}
+
+async function toggleTask(id){
+  const t = (D.tasks||[]).find(x=>x.id===id||x.id==id);
+  if(t){ t.done=!t.done; try{ localStorage.setItem('ecolia_tasks_'+currentUser.id,JSON.stringify(D.tasks)); }catch(e){} }
+  renderPage();
+}
+
+async function deleteTask(id){
+  D.tasks = (D.tasks||[]).filter(x=>x.id!==id&&x.id!=id);
+  try{ localStorage.setItem('ecolia_tasks_'+currentUser.id,JSON.stringify(D.tasks)); }catch(e){}
+  renderPage();
+}
+
+function loadTasks(){
+  try{
+    const saved = localStorage.getItem('ecolia_tasks_'+currentUser.id);
+    D.tasks = saved ? JSON.parse(saved) : [];
+  }catch(e){ D.tasks=[]; }
+}
+
+
+function renderCRMTable(){
   const q = (S.crmQ||'').toLowerCase();
   const fl = D.clients.filter(c=>
     (c.name||'').toLowerCase().includes(q)||
     (c.email||'').toLowerCase().includes(q)||
     (c.phone||'').toLowerCase().includes(q)
   );
-
-  return`<div class="topbar">
-    <div class="page-title">CRM — Fiches clients</div>
-    <button class="btn primary" onclick="openModal('client')">+ Nouveau client</button>
-  </div>
-  <div class="stats-grid cols3" style="margin-bottom:1rem">
-    <div class="stat-card"><div class="stat-label">Clients total</div><div class="stat-value">${D.clients.length}</div><div class="stat-sub">${D.clients.filter(c=>c.type_client==='pro').length} pro · ${D.clients.filter(c=>c.type_client!=='pro').length} particuliers</div></div>
-    <div class="stat-card"><div class="stat-label">CA total cumulé</div><div class="stat-value">${getTotalCA().toFixed(0)}€</div><div class="stat-sub">Toutes prestations</div></div>
-    <div class="stat-card"><div class="stat-label">CA moyen / client</div><div class="stat-value">${D.clients.length>0?(getTotalCA()/D.clients.length).toFixed(0):'0'}€</div></div>
-  </div>
-  <div class="card">
-    <div class="crm-bar">
-      <input class="crm-search" placeholder="Rechercher nom, email, téléphone..." value="${S.crmQ||''}" oninput="S.crmQ=this.value;renderPage()">
-      <span style="font-size:12px;color:var(--text-secondary)">${fl.length} client${fl.length>1?'s':''}</span>
-    </div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Client</th><th>Type</th><th>Téléphone</th><th>Email</th><th>Adresse</th><th class="td-right">CA total</th><th>Infos</th><th></th></tr></thead>
-      <tbody>
-      ${fl.length===0?`<tr><td colspan="8" class="empty">Aucun client — crée ta première fiche !</td></tr>`:fl.map(c=>{
+  const tbody = document.getElementById('crm-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = fl.length===0
+    ? `<tr><td colspan="8" class="empty">Aucun client</td></tr>`
+    : fl.map(c=>{
         const clientCA = getClientCA(c.name);
         return`<tr>
           <td style="cursor:pointer" onclick="S.crmClientId='${c.id}';render()"><strong style="color:var(--blue)">${c.name}</strong><br><span style="font-size:10px;color:var(--text-tertiary)">${c.vehicle||''}</span></td>
-          <td><span style="font-size:11px;color:${c.type_client==='pro'?'var(--blue)':'var(--text-secondary)'}">${c.type_client==='pro'?'🏢 Pro':'👤 Particulier'}</span></td>
+          <td style="font-size:11px;color:${c.type_client==='pro'?'var(--blue)':'var(--text-secondary)'}">${c.type_client==='pro'?'🏢 Pro':'👤 Particulier'}</td>
           <td style="color:var(--text-secondary)">${c.phone||'—'}</td>
           <td style="color:var(--text-secondary)">${c.email||'—'}</td>
           <td style="color:var(--text-secondary);max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.adresse_postale||'—'}</td>
           <td class="td-right"><strong style="color:${clientCA>0?'var(--blue)':'var(--text-secondary)'}">${clientCA.toFixed(0)}€</strong></td>
-          <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;color:var(--text-secondary);font-size:12px">${c.notes||'—'}</td>
-          <td style="display:flex;gap:6px">
+          <td style="color:var(--text-secondary);font-size:12px;max-width:100px;overflow:hidden;text-overflow:ellipsis">${c.notes||'—'}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
             <span style="cursor:pointer;color:var(--blue);font-size:12px" onclick="editClient('${c.id}')">✏️</span>
+            ${c.phone?`<a href="sms:${c.phone}" style="font-size:12px;text-decoration:none">📱</a>`:''}
+            ${c.email?`<a href="mailto:${c.email}" style="font-size:12px;text-decoration:none">📧</a>`:''}
             <span class="del-btn" onclick="delCl('${c.id}')">×</span>
           </td>
         </tr>`;
-      }).join('')}
+      }).join('');
+  // Update count
+  const countEl = document.getElementById('crm-count');
+  if(countEl) countEl.textContent = fl.length+' client'+(fl.length>1?'s':'');
+}
+
+function pageCRM(){
+  if(S.crmClientId) return pageClientDetail(S.crmClientId);
+  const q = (S.crmQ||'').toLowerCase();
+  const filterStatut = S.crmStatutFilter||'tous';
+
+  let fl = D.clients.filter(c=>
+    (c.name||'').toLowerCase().includes(q)||
+    (c.phone||'').toLowerCase().includes(q)
+  );
+  if(filterStatut!=='tous') fl = fl.filter(c=>(c.status||'new')===filterStatut);
+  const sortMode = S.crmSort||'alpha';
+  if(sortMode==='alpha') fl = fl.sort((a,b)=>(a.name||'').localeCompare(b.name||'','fr'));
+  else if(sortMode==='recent') fl = fl.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  else if(sortMode==='ancien') fl = fl.sort((a,b)=>(a.created_at||'').localeCompare(b.created_at||''));
+  else if(sortMode==='ca') fl = fl.sort((a,b)=>getClientCA(b.name)-getClientCA(a.name));
+
+  const counts = {};
+  STATUTS.forEach(s=>{ counts[s.v]=D.clients.filter(c=>(c.status||'new')===s.v).length; });
+
+  return`<div class="topbar">
+    <div class="page-title">CRM</div>
+    <button class="btn primary" onclick="openModal('client')">+ Nouveau contact</button>
+  </div>
+
+  <div style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;align-items:center">
+    <select onchange="S.crmSort=this.value;renderPage()" style="padding:5px 10px;border-radius:100px;font-size:12px;border:0.5px solid var(--gray-border-mid);background:var(--bg-primary);color:var(--text-secondary)">
+      <option value="alpha"${(S.crmSort||'alpha')==='alpha'?' selected':''}>A → Z</option>
+      <option value="recent"${S.crmSort==='recent'?' selected':''}>Plus récents</option>
+      <option value="ancien"${S.crmSort==='ancien'?' selected':''}>Plus anciens</option>
+      <option value="ca"${S.crmSort==='ca'?' selected':''}>CA décroissant</option>
+    </select>
+    <span onclick="S.crmStatutFilter='tous';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${filterStatut==='tous'?'var(--blue)':'var(--bg-primary)'};color:${filterStatut==='tous'?'white':'var(--text-secondary)'}">Tous (${D.clients.length})</span>
+    ${STATUTS.map(s=>`<span onclick="S.crmStatutFilter='${s.v}';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid ${s.color};background:${filterStatut===s.v?s.color:s.bg};color:${filterStatut===s.v?'white':s.color}">${s.l} (${counts[s.v]||0})</span>`).join('')}
+  </div>
+
+  <div style="background:white;border:0.5px solid var(--gray-border);border-radius:var(--radius-lg);overflow:hidden">
+    <div style="padding:12px 16px;border-bottom:0.5px solid var(--gray-border);display:flex;gap:10px;align-items:center">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><circle cx="6.5" cy="6.5" r="4"/><path d="M11 11l3 3"/></svg>
+      <input id="crm-search-input" placeholder="Rechercher un contact..." value="${S.crmQ||''}" oninput="S.crmQ=this.value;renderCRMTable()" style="border:none;outline:none;font-size:13px;flex:1;background:transparent;color:var(--text-primary)" autofocus>
+      <span id="crm-count" style="font-size:12px;color:var(--text-secondary)">${fl.length} contact${fl.length>1?'s':''}</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:var(--bg-secondary);border-bottom:0.5px solid var(--gray-border)">
+          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Nom</th>
+          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Téléphone</th>
+          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Statut du lead</th>
+          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">CA total</th>
+          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)"></th>
+        </tr>
+      </thead>
+      <tbody id="crm-tbody">
+      ${fl.length===0
+        ? `<tr><td colspan="5" style="padding:2rem;text-align:center;color:var(--text-tertiary)">Aucun contact trouvé</td></tr>`
+        : fl.map(c=>{
+          const clientCA = getClientCA(c.name);
+          const initials = (c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+          const st = getStatutStyle(c.status||'new');
+          return`<tr style="border-bottom:0.5px solid var(--gray-border)" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background='transparent'">
+            <td style="padding:12px 16px;cursor:pointer" onclick="S.crmClientId='${c.id}';render()">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--blue);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">${initials}</div>
+                <div>
+                  <div style="font-size:13px;font-weight:500">${c.name}</div>
+                  ${c.email?`<div style="font-size:11px;color:var(--text-secondary)">${c.email}</div>`:''}
+                </div>
+              </div>
+            </td>
+            <td style="padding:12px 16px;font-size:13px;color:var(--text-secondary)">${c.phone||'—'}</td>
+            <td style="padding:12px 16px" onclick="event.stopPropagation()">
+              <select onchange="updateLeadStatut('${c.id}',this.value)" style="padding:4px 8px;border-radius:100px;font-size:11px;font-weight:600;border:none;cursor:pointer;background:${st.bg};color:${st.color}">
+                ${STATUTS.map(s=>`<option value="${s.v}"${(c.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}
+              </select>
+            </td>
+            <td style="padding:12px 16px;font-size:13px;font-weight:500;color:${clientCA>0?'var(--blue)':'var(--text-secondary)'}">${clientCA>0?clientCA.toFixed(0)+'€':'—'}</td>
+            <td style="padding:12px 16px" onclick="event.stopPropagation()">
+              <div style="display:flex;gap:8px;align-items:center">
+                ${c.phone?`<a href="sms:${c.phone}" style="font-size:14px;text-decoration:none">📱</a>`:''}
+                ${c.phone?`<a href="https://wa.me/33${c.phone.replace(/[^0-9]/g,'').slice(1)}" target="_blank" style="font-size:14px;text-decoration:none">💬</a>`:''}
+                ${c.email?`<a href="mailto:${c.email}" style="font-size:14px;text-decoration:none">📧</a>`:''}
+                <span onclick="editClient('${c.id}')" style="cursor:pointer;font-size:14px">✏️</span>
+                <span onclick="delCl('${c.id}')" style="cursor:pointer;color:var(--red-mid);font-weight:700">×</span>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
       </tbody>
-    </table></div>
+    </table>
   </div>`;
+}
+
+async function updateLeadStatut(clientId, newStatut){
+  const{error} = await sb.from('clients').update({status:newStatut}).eq('id',clientId);
+  if(error){alert('Erreur: '+error.message);return;}
+  const c = D.clients.find(x=>x.id===clientId||x.id==clientId);
+  if(c) c.status = newStatut;
+  // Update count badges without full re-render
+  const counts = {};
+  STATUTS.forEach(s=>{ counts[s.v]=D.clients.filter(c=>(c.status||'new')===s.v).length; });
+  renderPage();
 }
 
 
@@ -1351,27 +1629,29 @@ function pagePrestationsHist(){
   <div style="display:flex;border-bottom:0.5px solid var(--gray-border);margin-bottom:1rem;overflow-x:auto">
     <div style="${tabStyle('semaine')}" onclick="S.prestView='semaine';renderPage()">Cette semaine</div>
     <div style="${tabStyle('mois')}" onclick="S.prestView='mois';renderPage()">Ce mois</div>
-    <div style="${tabStyle('historique')}" onclick="S.prestView='historique';renderPage()">Historique semaines</div>
+    <div style="${tabStyle('historique')}" onclick="S.prestView='historique';renderPage()">Semaines</div>
+    <div style="${tabStyle('historique_mois')}" onclick="S.prestView='historique_mois';renderPage()">Mois</div>
     <div style="${tabStyle('tout')}" onclick="S.prestView='tout';renderPage()">Tout</div>
   </div>
 
   ${view==='historique' ? renderWeeklyHistory() : ''}
+  ${view==='historique_mois' ? renderMonthlyHistory() : ''}
 
-  ${view!=='historique' ? `<div class="stats-grid cols4" style="margin-bottom:1rem">
+  ${(view!=='historique'&&view!=='historique_mois') ? `<div class="stats-grid cols4" style="margin-bottom:1rem">
     <div class="stat-card"><div class="stat-label">Prestations</div><div class="stat-value">${items.length}</div></div>
     <div class="stat-card"><div class="stat-label">CA total</div><div class="stat-value">${caView.toFixed(0)}€</div></div>
     <div class="stat-card"><div class="stat-label">✅ Encaissé</div><div class="stat-value" style="color:var(--green-dark)">${caPaye.toFixed(0)}€</div></div>
     <div class="stat-card"><div class="stat-label">⏳ En attente</div><div class="stat-value" style="color:var(--amber-dark)">${caAttente.toFixed(0)}€</div></div>
   </div>` : ''}
 
-  ${view!=='historique' ? `<!-- Filtre statut paiement -->
+  ${(view!=='historique'&&view!=='historique_mois') ? `<!-- Filtre statut paiement -->
   <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
     <span onclick="S.prestStatut='tous';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${(S.prestStatut||'tous')==='tous'?'var(--blue)':'var(--bg-primary)'};color:${(S.prestStatut||'tous')==='tous'?'white':'var(--text-secondary)'}">Tous</span>
     <span onclick="S.prestStatut='attente';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${S.prestStatut==='attente'?'var(--amber-dark)':'var(--bg-primary)'};color:${S.prestStatut==='attente'?'white':'var(--text-secondary)'}">⏳ En attente</span>
     <span onclick="S.prestStatut='paye';renderPage()" style="cursor:pointer;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${S.prestStatut==='paye'?'var(--green-mid)':'var(--bg-primary)'};color:${S.prestStatut==='paye'?'white':'var(--text-secondary)'}">✅ Payé</span>
   </div>` : ''}
 
-  ${view!=='historique' ? `<div class="card">
+  ${(view!=='historique'&&view!=='historique_mois') ? `<div class="card">
     <div class="tbl-wrap"><table>
       <thead><tr><th>Date</th><th>Client</th><th>Véhicule</th><th>Prestation</th><th>Règlement</th><th class="td-right">Montant</th><th>Statut</th><th></th></tr></thead>
       <tbody>
@@ -1402,16 +1682,24 @@ function pagePrestationsHist(){
 function mIntervention(){
   const isNewClient = S.form.newClient;
   const isEdit = !!S.form.editIntervId;
+  // Sort clients alphabetically, new clients first
+  const sortedClients = [...D.clients].sort((a,b)=>(a.name||'').localeCompare(b.name||'', 'fr'));
+  const searchQ = (S.form.clientSearch||'').toLowerCase();
+  const filteredClients = searchQ ? sortedClients.filter(c=>(c.name||'').toLowerCase().includes(searchQ)) : sortedClients;
+
   return`<div class="modal-title">${isEdit?'Modifier la prestation':'Nouvelle prestation'}</div>
 
   <div class="field"><label>Client</label>
     ${isEdit
       ? `<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px;font-weight:500">${S.form._clientName||'—'}</div>`
-      : `<select onchange="S.form.clientId=this.value;S.form.newClient=this.value==='nouveau';$('modal-content').innerHTML=mIntervention()">
-          <option value="">— Sélectionner un client existant —</option>
-          ${D.clients.map(c=>`<option value="${c.id}"${S.form.clientId==c.id?' selected':''}>${c.name}</option>`).join('')}
-          <option value="nouveau"${isNewClient?' selected':''}>+ Nouveau client</option>
-        </select>`
+      : `<div>
+          <input id="client-search-modal" value="${S.form.clientSearch||''}" oninput="S.form.clientSearch=this.value;$('modal-content').innerHTML=mIntervention();document.getElementById('client-search-modal').focus();document.getElementById('client-search-modal').setSelectionRange(999,999)" placeholder="🔍 Rechercher un client..." style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;margin-bottom:6px;box-sizing:border-box">
+          <div style="max-height:180px;overflow-y:auto;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);background:var(--bg-primary)">
+            <div onclick="S.form.clientId='nouveau';S.form.newClient=true;S.form.clientSearch='';$('modal-content').innerHTML=mIntervention()" style="padding:10px 12px;cursor:pointer;font-size:13px;color:var(--blue);font-weight:500;border-bottom:0.5px solid var(--gray-border);background:var(--blue-light)">+ Nouveau client</div>
+            ${filteredClients.map(c=>`<div onclick="S.form.clientId='${c.id}';S.form.newClient=false;S.form.clientSearch='${c.name.replace(/'/g,"\\'")}';$('modal-content').innerHTML=mIntervention()" style="padding:10px 12px;cursor:pointer;font-size:13px;background:${S.form.clientId==c.id?'var(--blue-light)':'transparent'};color:${S.form.clientId==c.id?'var(--blue)':'var(--text-primary)'};border-bottom:0.5px solid var(--gray-border)">${c.name}${c.phone?' <span style="color:var(--text-secondary);font-size:11px">— '+c.phone+'</span>':''}</div>`).join('')}
+            ${filteredClients.length===0?`<div style="padding:10px 12px;color:var(--text-secondary);font-size:13px">Aucun client trouvé</div>`:''}
+          </div>
+        </div>`
     }
   </div>
 
@@ -1437,9 +1725,9 @@ function mIntervention(){
 
   <div class="form-grid2">
     <div class="field"><label>Montant TTC (€) *</label><input type="number" value="${S.form.montant||''}" oninput="S.form.montant=this.value" placeholder="ex: 120"></div>
-    <div class="field"><label>Moyen de règlement *</label>
+    <div class="field"><label>Moyen de règlement <span style="font-size:10px;color:var(--text-secondary)">(optionnel)</span></label>
       <select onchange="S.form.moyen_paiement=this.value">
-        <option value="">— Choisir —</option>
+        <option value="">— Non renseigné —</option>
         <option value="Espèces"${S.form.moyen_paiement==='Espèces'?' selected':''}>💵 Espèces</option>
         <option value="Chèque"${S.form.moyen_paiement==='Chèque'?' selected':''}>📝 Chèque</option>
         <option value="Carte bancaire"${S.form.moyen_paiement==='Carte bancaire'?' selected':''}>💳 Carte bancaire</option>
@@ -1454,7 +1742,7 @@ function mIntervention(){
 async function saveIntervention(){
   const montant = parseFloat(S.form.montant)||0;
   if(!montant){ alert('Montant requis.'); return; }
-  if(!S.form.moyen_paiement){ alert('Moyen de règlement requis.'); return; }
+  // moyen_paiement optional
 
   // EDIT mode
   if(S.form.editIntervId){
@@ -1548,6 +1836,74 @@ function editIntervention(id){
   S.form._clientName = i.client_name;
   $('modal-content').innerHTML = mIntervention();
   $('modal-overlay').classList.add('open');
+}
+
+function renderMonthlyHistory(){
+  const now = new Date();
+  // Build months: 12 past + current + 6 future
+  const months = [];
+  for(let i=11; i>=-6; i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const y=d.getFullYear(), m=d.getMonth();
+    const prefix = y+'-'+String(m+1).padStart(2,'0');
+    const items = D.interventions.filter(i=>i.date&&i.date.startsWith(prefix))
+      .sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    const label = d.toLocaleString('fr-FR',{month:'long',year:'numeric'});
+    const ca = items.reduce((s,i)=>s+(i.montant||0),0);
+    const paye = items.filter(i=>i.statut_paiement==='paye').reduce((s,i)=>s+(i.montant||0),0);
+    const attente = ca - paye;
+    const isCurrent = y===now.getFullYear()&&m===now.getMonth();
+    const isFuture = d > now;
+    months.push({y,m,label,items,ca,paye,attente,isCurrent,isFuture,prefix});
+  }
+
+  // Select month
+  const selKey = S.histMoisKey || months.find(m=>m.isCurrent)?.prefix || months[11]?.prefix;
+  const selMonth = months.find(m=>m.prefix===selKey) || months[11];
+
+  return`<div style="display:grid;grid-template-columns:220px 1fr;gap:1rem;align-items:start">
+    <!-- Liste des mois -->
+    <div class="card" style="overflow:hidden">
+      ${months.map(mo=>`<div onclick="S.histMoisKey='${mo.prefix}';renderPage()" style="padding:10px 14px;cursor:pointer;border-bottom:0.5px solid var(--gray-border);background:${selKey===mo.prefix?'var(--blue-light)':mo.isCurrent?'var(--bg-secondary)':'transparent'};color:${selKey===mo.prefix?'var(--blue)':mo.isFuture?'var(--text-tertiary)':'var(--text-primary)'}">
+        <div style="font-size:13px;font-weight:${mo.isCurrent?'600':'400'}">${mo.label}${mo.isCurrent?' ●':''}</div>
+        <div style="font-size:11px;color:${selKey===mo.prefix?'var(--blue)':'var(--text-secondary)'};margin-top:2px">${mo.ca>0?mo.ca.toFixed(0)+'€':mo.isFuture?'à venir':'—'} · ${mo.items.length} presta${mo.items.length>1?'tions':'tion'}</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- Détail du mois sélectionné -->
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div style="font-size:16px;font-weight:600">${selMonth?.label||''}</div>
+        <div style="display:flex;gap:12px;font-size:13px">
+          <span style="color:var(--blue);font-weight:600">${selMonth?.ca.toFixed(0)||0}€</span>
+          <span style="color:var(--green-dark)">✅ ${selMonth?.paye.toFixed(0)||0}€</span>
+          <span style="color:var(--amber-dark)">⏳ ${selMonth?.attente.toFixed(0)||0}€</span>
+        </div>
+      </div>
+      ${!selMonth||selMonth.items.length===0
+        ? `<div class="card" style="padding:2rem;text-align:center;color:var(--text-tertiary)">Aucune prestation ce mois</div>`
+        : `<div class="card">
+            <table><thead><tr><th>Date</th><th>Client</th><th>Véhicule</th><th>Prestation</th><th>Règlement</th><th class="td-right">Montant</th><th>Statut</th></tr></thead>
+            <tbody>
+              ${selMonth.items.map(i=>`<tr>
+                <td style="color:var(--text-secondary)">${i.date}</td>
+                <td><strong>${i.client_name||'—'}</strong></td>
+                <td>${i.vehicle||'—'}</td>
+                <td>${i.prestation||'—'}</td>
+                <td style="color:var(--text-secondary)">${i.moyen_paiement||'—'}</td>
+                <td class="td-right"><strong style="color:var(--blue)">${(i.montant||0).toFixed(0)}€</strong></td>
+                <td>
+                  ${i.statut_paiement==='paye'
+                    ? `<span onclick="togglePaiement('${i.id}','attente')" style="cursor:pointer;background:var(--green-light);color:var(--green-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">✅ Payé</span>`
+                    : `<span onclick="togglePaiement('${i.id}','paye')" style="cursor:pointer;background:var(--amber-light);color:var(--amber-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">⏳ En attente</span>`
+                  }
+                </td>
+              </tr>`).join('')}
+            </tbody></table>
+          </div>`
+      }
+    </div>
+  </div>`;
 }
 
 function renderWeeklyHistory(){
@@ -1651,8 +2007,7 @@ function getClientsForMonth(year, month){
 function getDepensesForMonth(year, month){
   const prefix = year+'-'+String(month+1).padStart(2,'0');
   const manuelle = D.depenses.filter(d=>d.date&&d.date.startsWith(prefix));
-  const fb = D.kpis.filter(k=>k.dates&&k.dates.startsWith&&k.dates.startsWith(prefix)).map(k=>({montant:k.depenses||0,fournisseur:'Meta Ads',categorie:'Publicité',description:'Campagne '+k.semaine}));
-  return [...manuelle, ...fb];
+  return manuelle;
 }
 
 function pageCompta(){
@@ -1660,7 +2015,10 @@ function pageCompta(){
   const tR = getTotalCA();
   const caWeekly = getWeekCA();
   const tauxURSSAF = S.tauxURSSAF || 22;
-
+  const tD = D.depenses.reduce((s,d)=>s+(d.montant||0),0);
+  const urssafTotal = Math.round(tR * tauxURSSAF / 100);
+  const netTotal = tR - tD - urssafTotal;
+  const caMonthly = getMonthCA();
   // Mois sélectionné pour le simulateur
   const selYear = S.comptaYear || now.getFullYear();
   const selMonth = S.comptaMonth !== undefined ? S.comptaMonth : now.getMonth();
@@ -1712,6 +2070,7 @@ function pageCompta(){
         <div>
           <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Taux URSSAF</div>
           <select onchange="S.tauxURSSAF=parseFloat(this.value);renderPage()" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary);color:var(--text-primary)">
+            <option value="0" ${(S.tauxURSSAF||22)===0?'selected':''}>0% — Désactivé</option>
             <option value="22" ${(S.tauxURSSAF||22)==22?'selected':''}>22% — Services</option>
             <option value="12.3" ${S.tauxURSSAF==12.3?'selected':''}>12.3% — Commerce</option>
             <option value="21.1" ${S.tauxURSSAF==21.1?'selected':''}>21.1% — Libéral</option>
@@ -1840,16 +2199,8 @@ function pageModuleDetail(id){
 function pageDepenses(){
   const now = new Date();
   const curM = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  const allDep = [...D.depenses];
-  // Auto-add FB Ads spend from KPIs
-  D.kpis.forEach(k=>{
-    if((k.depenses||0)>0){
-      const fbKey = 'fb_kpi_'+k.id;
-      if(!allDep.find(d=>d._fbKey===fbKey)){
-        allDep.push({id:fbKey,_fbKey:fbKey,date:k.dates||'',fournisseur:'Meta Ads (Facebook)',categorie:'Publicité',description:'Campagne '+k.semaine,montant:k.depenses,moyen:'Carte bancaire',_auto:true});
-      }
-    }
-  });
+  const allDep = D.depenses;
+
   const total=allDep.reduce((s,d)=>s+(d.montant||0),0);
   const monthDep=allDep.filter(d=>d.date&&d.date.startsWith(curM));
   const totalMonth=monthDep.reduce((s,d)=>s+(d.montant||0),0);
@@ -1857,17 +2208,20 @@ function pageDepenses(){
   const top=Object.entries(parCat).sort((a,b)=>b[1]-a[1])[0];
   const fbTotal=allDep.filter(d=>d.categorie==='Publicité').reduce((s,d)=>s+(d.montant||0),0);
 
-  return`<div class="topbar"><div class="page-title">Dépenses entreprise</div><button class="btn primary" onclick="openModal('depense')">+ Ajouter une dépense</button></div>
+  return`<div class="topbar"><div class="page-title">Dépenses entreprise</div><div class="btn-group"><button id="btn-del-selected" class="btn" style="color:var(--red-mid);display:none" onclick="delSelectedDep()">🗑️ Supprimer sélection</button><button class="btn primary" onclick="openModal('depense')">+ Ajouter une dépense</button></div></div>
   <div class="stats-grid cols4">
     <div class="stat-card"><div class="stat-label">Total toutes dépenses</div><div class="stat-value">${total.toFixed(0)}€</div></div>
     <div class="stat-card"><div class="stat-label">Dépenses ce mois</div><div class="stat-value">${totalMonth.toFixed(0)}€</div><div class="stat-sub">${now.toLocaleString('fr-FR',{month:'long'})}</div></div>
-    <div class="stat-card"><div class="stat-label">Budget Facebook Ads</div><div class="stat-value" style="color:var(--blue)">${fbTotal.toFixed(0)}€</div><div class="stat-sub">Auto-importé des KPI</div></div>
+
     <div class="stat-card"><div class="stat-label">Principale catégorie</div><div class="stat-value" style="font-size:14px">${top?top[0]:'—'}</div>${top?`<div class="stat-sub">${top[1].toFixed(0)}€</div>`:''}</div>
   </div>
-  <div class="card"><div class="card-head"><span class="card-title">Toutes les dépenses</span><span style="font-size:11px;color:var(--blue)">✨ Dépenses Facebook Ads auto-importées des KPI</span></div>
+  <div class="card"><div class="card-head"><span class="card-title">Toutes les dépenses</span></div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Date</th><th>Fournisseur / Prestataire</th><th>Catégorie</th><th>Description</th><th class="td-right">Montant TTC</th><th>Moyen de paiement</th><th></th></tr></thead>
-    <tbody>${allDep.length===0?`<tr><td colspan="7" class="empty">Aucune dépense — ajoute ta première !</td></tr>`:allDep.map(d=>`<tr style="${d._auto?'background:var(--blue-light);':''}"><td style="color:var(--text-secondary)">${d.date||'—'}</td><td><strong>${d.fournisseur}</strong>${d._auto?'<span style="font-size:10px;color:var(--blue);margin-left:6px">auto</span>':''}</td><td><span class="pill pill-amber">${d.categorie}</span></td><td style="color:var(--text-secondary)">${d.description||''}</td><td class="td-right" style="color:var(--red-mid);font-weight:600">${(d.montant||0).toFixed(2)}€</td><td style="color:var(--text-secondary)">${d.moyen||'—'}</td><td>${d._auto?'':'<span class=\"del-btn\" onclick=\"delDep(\''+d.id+'\')\">×</span>'}</td></tr>`).join('')}</tbody>
+    <thead><tr>
+      <th style="width:30px"><input type="checkbox" id="dep-check-all" onchange="toggleAllDep(this.checked)"></th>
+      <th>Date</th><th>Fournisseur / Prestataire</th><th>Catégorie</th><th>Description</th><th class="td-right">Montant TTC</th><th>Moyen de paiement</th><th></th>
+    </tr></thead>
+    <tbody>${allDep.length===0?`<tr><td colspan="8" class="empty">Aucune dépense — ajoute ta première !</td></tr>`:allDep.map(d=>`<tr style="${d._auto?'background:var(--blue-light);':''}"><td><input type="checkbox" class="dep-check" value="${d.id||''}" onchange="updateDepSelection()" ${d._auto?'disabled':''}></td><td style="color:var(--text-secondary)">${d.date||'—'}</td><td><strong>${d.fournisseur}</strong>${d._auto?'<span style="font-size:10px;color:var(--blue);margin-left:6px">auto</span>':''}</td><td><span class="pill pill-amber">${d.categorie}</span></td><td style="color:var(--text-secondary)">${d.description||''}</td><td class="td-right" style="color:var(--red-mid);font-weight:600">${(d.montant||0).toFixed(2)}€</td><td style="color:var(--text-secondary)">${d.moyen||'—'}</td><td style="display:flex;gap:6px">${d._auto?'':`<span style="cursor:pointer;color:var(--blue);font-size:12px" onclick="editDep('${d.id}')">✏️</span><span class="del-btn" onclick="delDep('${d.id}')">×</span>`}</td></tr>`).join('')}
   </table></div></div>`;
 }
 
@@ -1952,12 +2306,16 @@ function mClient(){
     </select></div>
   </div>
   <div class="field"><label>Adresse postale</label><input value="${S.form.adresse_postale||''}" oninput="S.form.adresse_postale=this.value" placeholder="ex: 12 rue des Lilas, 76000 Rouen"></div>
-  <div class="field"><label>Statut</label><select onchange="S.form.status=this.value">${STATUTS.map(s=>`<option value="${s.v}"${(S.form.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}</select></div>
+  <div class="field"><label>Statut du lead</label><select onchange="S.form.status=this.value" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)">${STATUTS.map(s=>`<option value="${s.v}"${(S.form.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}</select></div>
   <div class="field"><label>Informations supplémentaires</label><textarea oninput="S.form.notes=this.value" placeholder="Préférences, notes, allergies, véhicules habituels...">${S.form.notes||''}</textarea></div>
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveClient()">Enregistrer</button></div>`;
 }
-function mDep(){return`<div class="modal-title">Nouvelle dépense</div><div class="form-grid2"><div class="field"><label>Date *</label><input type="date" value="${S.form.date||''}" oninput="S.form.date=this.value"></div><div class="field"><label>Montant TTC (€) *</label><input type="number" step="0.01" value="${S.form.montant||''}" oninput="S.form.montant=this.value" placeholder="85.00"></div></div><div class="field"><label>Fournisseur / Prestataire *</label><input value="${S.form.fournisseur||''}" oninput="S.form.fournisseur=this.value" placeholder="ex: Koch-Chemie"></div><div class="form-grid2"><div class="field"><label>Catégorie</label><select onchange="S.form.categorie=this.value">${CAT_DEP.map(c=>`<option value="${c}"${(S.form.categorie||CAT_DEP[0])===c?' selected':''}>${c}</option>`).join('')}</select></div><div class="field"><label>Moyen de paiement</label><select onchange="S.form.moyen=this.value">${MOYENS.map(m=>`<option value="${m}"${(S.form.moyen||MOYENS[0])===m?' selected':''}>${m}</option>`).join('')}</select></div></div><div class="field"><label>Description</label><textarea oninput="S.form.description=this.value" placeholder="Détail de la dépense...">${S.form.description||''}</textarea></div><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveDepense()">Enregistrer</button></div>`}
-function mKpi(){return`<div class="modal-title">Nouvelle semaine — KPI Facebook</div><div class="form-grid2"><div class="field"><label>Semaine *</label><input value="${S.form.semaine||''}" oninput="S.form.semaine=this.value" placeholder="ex: S13"></div><div class="field"><label>Dates</label><input value="${S.form.dates||''}" oninput="S.form.dates=this.value" placeholder="24–30 Mar"></div></div><div class="form-grid2"><div class="field"><label>Impressions</label><input type="number" value="${S.form.impressions||''}" oninput="S.form.impressions=this.value" placeholder="15000"></div><div class="field"><label>Clics</label><input type="number" value="${S.form.clics||''}" oninput="S.form.clics=this.value" placeholder="400"></div></div><div class="form-grid2"><div class="field"><label>Leads générés</label><input type="number" value="${S.form.leads||''}" oninput="S.form.leads=this.value" placeholder="20"></div><div class="field"><label>Clients obtenus</label><input type="number" value="${S.form.clients_ob||''}" oninput="S.form.clients_ob=this.value" placeholder="4"></div></div><div class="form-grid2"><div class="field"><label>Dépenses (€)</label><input type="number" step="0.01" value="${S.form.depenses||''}" oninput="S.form.depenses=this.value" placeholder="100"></div><div class="field"><label>Revenus (€)</label><input type="number" step="0.01" value="${S.form.revenus||''}" oninput="S.form.revenus=this.value" placeholder="500"></div></div><div class="field"><label>Panier moyen (€)</label><input type="number" step="0.01" value="${S.form.panier||''}" oninput="S.form.panier=this.value" placeholder="120"></div><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveKpi()">Enregistrer</button></div>`}
+function mDep(){
+  const isEdit = !!S.form.editDepId;
+  return`<div class="modal-title">${isEdit?'Modifier la dépense':'Nouvelle dépense'}</div><div class="form-grid2"><div class="field"><label>Date *</label><input type="date" value="${S.form.date||''}" oninput="S.form.date=this.value"></div><div class="field"><label>Montant TTC (€) *</label><input type="number" step="0.01" value="${S.form.montant||''}" oninput="S.form.montant=this.value" placeholder="85.00"></div></div><div class="field"><label>Fournisseur / Prestataire *</label><input value="${S.form.fournisseur||''}" oninput="S.form.fournisseur=this.value" placeholder="ex: Koch-Chemie"></div><div class="form-grid2"><div class="field"><label>Catégorie</label><select onchange="S.form.categorie=this.value">${CAT_DEP.map(c=>`<option value="${c}"${(S.form.categorie||CAT_DEP[0])===c?' selected':''}>${c}</option>`).join('')}</select></div><div class="field"><label>Moyen de paiement</label><select onchange="S.form.moyen=this.value">${MOYENS.map(m=>`<option value="${m}"${(S.form.moyen||MOYENS[0])===m?' selected':''}>${m}</option>`).join('')}</select></div></div><div class="field"><label>Description</label><textarea oninput="S.form.description=this.value" placeholder="Détail de la dépense...">${S.form.description||''}</textarea></div><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveDepense()">${isEdit?'Modifier':'Enregistrer'}</button></div>`;
+}
+function mKpi(){return`<div class="modal-title">Nouvelle semaine — KPI Facebook</div><div class="form-grid2"><div class="field"><label>Semaine *</label><input value="${S.form.semaine||''}" oninput="S.form.semaine=this.value" placeholder="ex: S13"></div><div class="field"><label>Dates</label><input value="${S.form.dates||''}" oninput="S.form.dates=this.value" placeholder="24–30 Mar"></div></div><div class="form-grid2"><div class="field"><label>Impressions</label><input type="number" value="${S.form.impressions||''}" oninput="S.form.impressions=this.value" placeholder="15000"></div><div class="field"><label>Clics</label><input type="number" value="${S.form.clics||''}" oninput="S.form.clics=this.value" placeholder="400"></div></div><div class="form-grid2"><div class="field"><label>Leads générés</label><input type="number" value="${S.form.leads||''}" oninput="S.form.leads=this.value" placeholder="20"></div><div class="field"><label>Clients obtenus</label><input type="number" value="${S.form.clients_ob||''}" oninput="S.form.clients_ob=this.value" placeholder="4"></div></div><div class="form-grid2"><div class="field"><label>Dépenses (€)</label><input type="number" step="0.01" value="${S.form.depenses||''}" oninput="S.form.depenses=this.value" placeholder="100"></div><div class="field"><label>Revenus (€)</label><input type="number" step="0.01" value="${S.form.revenus||''}" oninput="S.form.revenus=this.value" placeholder="500"></div></div><div class="field"><label>Panier moyen (€)</label><input type="number" step="0.01" value="${S.form.panier||''}" oninput="S.form.panier=this.value" placeholder="120"></div><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveKpi()">${isEdit?'Modifier':'Enregistrer'}</button></div>`;
+}
 
 // ═══════════════════════════════════
 // CRUD — Supabase
@@ -1978,7 +2336,7 @@ function mPrestation(){
 function openModal(t){
   S.modal=t;
   S.form={type:'nettoyage',categorie:CAT_DEP[0],moyen:MOYENS[0],status:'new',statut:'confirme',prenom:'',nom:'',adresse:'',prix:'',telephone:'',notes:'',docType:'facture',lignes:[{nom:'',description:'',quantite:1,prix:0}],tva:0,date:new Date().toISOString().slice(0,10)};
-  const mp={event:mEvent,client:mClient,depense:mDep,kpi:mKpi,newdoc:mNewDoc,prestation:mPrestation,intervention:mIntervention};
+  const mp={event:mEvent,client:mClient,depense:mDep,kpi:mKpi,newdoc:mNewDoc,prestation:mPrestation,intervention:mIntervention,task:mTask};
   $('modal-content').innerHTML=(mp[t]||mEvent)();
   $('modal-overlay').classList.add('open');
 }
@@ -2036,23 +2394,93 @@ async function saveClient(){
 
 async function saveDepense(){
   if(!S.form.fournisseur||!S.form.montant)return alert('Fournisseur et montant requis.');
-  const row={user_id:currentUser.id,date:S.form.date||'',fournisseur:S.form.fournisseur.trim(),categorie:S.form.categorie||CAT_DEP[0],description:S.form.description||'',montant:parseFloat(S.form.montant)||0,moyen:S.form.moyen||MOYENS[0]};
-  const{data}=await sb.from('depenses').insert(row).select().single();
-  if(data) D.depenses.push(data);
+  const fields={date:S.form.date||'',fournisseur:S.form.fournisseur.trim(),categorie:S.form.categorie||CAT_DEP[0],description:S.form.description||'',montant:parseFloat(S.form.montant)||0,moyen:S.form.moyen||''};
+  if(S.form.editDepId){
+    await sb.from('depenses').update(fields).eq('id',S.form.editDepId);
+    const idx=D.depenses.findIndex(d=>d.id===S.form.editDepId||d.id==S.form.editDepId);
+    if(idx>=0) D.depenses[idx]={...D.depenses[idx],...fields};
+  } else {
+    const row={user_id:currentUser.id,...fields};
+    const{data}=await sb.from('depenses').insert(row).select().single();
+    if(data) D.depenses.push(data);
+  }
   closeModal();render();
 }
-
 async function saveKpi(){
-  if(!S.form.semaine)return alert('Semaine requise.');
-  const row={user_id:currentUser.id,semaine:S.form.semaine,dates:S.form.dates||'',impressions:parseInt(S.form.impressions)||0,clics:parseInt(S.form.clics)||0,leads:parseInt(S.form.leads)||0,clients_ob:parseInt(S.form.clients_ob)||0,depenses:parseFloat(S.form.depenses)||0,revenus:parseFloat(S.form.revenus)||0,panier:parseFloat(S.form.panier)||0};
-  const{data}=await sb.from('kpis').insert(row).select().single();
-  if(data) D.kpis.push(data);
+  const fields={semaine:S.form.semaine||'',dates:S.form.dates||'',impressions:parseFloat(S.form.impressions)||0,clics:parseFloat(S.form.clics)||0,leads:parseFloat(S.form.leads)||0,clients_ob:parseFloat(S.form.clients_ob)||0,depenses:parseFloat(S.form.depenses)||0,revenus:parseFloat(S.form.revenus)||0,panier:parseFloat(S.form.panier)||0};
+  if(S.form.editKpiId){
+    await sb.from('kpis').update(fields).eq('id',S.form.editKpiId);
+    const idx=D.kpis.findIndex(k=>k.id===S.form.editKpiId||k.id==S.form.editKpiId);
+    if(idx>=0) D.kpis[idx]={...D.kpis[idx],...fields};
+  } else {
+    const row={user_id:currentUser.id,...fields};
+    const{data}=await sb.from('kpis').insert(row).select().single();
+    if(data) D.kpis.push(data);
+  }
   closeModal();render();
 }
 
 async function delEv(id){if(!confirm('Supprimer ?'))return;await sb.from('events').delete().eq('id',id);D.events=D.events.filter(e=>e.id!==id);render()}
 async function delCl(id){if(!confirm('Supprimer ?'))return;await sb.from('clients').delete().eq('id',id);D.clients=D.clients.filter(c=>c.id!==id);render()}
+function editDep(id){
+  const d = D.depenses.find(x=>x.id===id||x.id==id);
+  if(!d) return;
+  S.form = {
+    editDepId: id,
+    date: d.date||'',
+    fournisseur: d.fournisseur||'',
+    categorie: d.categorie||CAT_DEP[0],
+    description: d.description||'',
+    montant: d.montant||0,
+    moyen: d.moyen||MOYENS[0]
+  };
+  $('modal-content').innerHTML = mDep();
+  $('modal-overlay').classList.add('open');
+}
+
+function updateDepSelection(){
+  const checks = document.querySelectorAll('.dep-check:checked');
+  const btn = document.getElementById('btn-del-selected');
+  if(btn) btn.style.display = checks.length>0 ? 'inline-flex' : 'none';
+}
+
+function toggleAllDep(checked){
+  document.querySelectorAll('.dep-check:not(:disabled)').forEach(cb=>cb.checked=checked);
+  updateDepSelection();
+}
+
+async function delSelectedDep(){
+  const checks = document.querySelectorAll('.dep-check:checked');
+  if(!checks.length) return;
+  if(!confirm(`Supprimer ${checks.length} dépense(s) ?`)) return;
+  const ids = [...checks].map(c=>c.value);
+  for(const id of ids){
+    await sb.from('depenses').delete().eq('id',id);
+    D.depenses = D.depenses.filter(d=>d.id!==id&&d.id!=id);
+  }
+  render();
+}
+
 async function delDep(id){if(!confirm('Supprimer ?'))return;await sb.from('depenses').delete().eq('id',id);D.depenses=D.depenses.filter(d=>d.id!==id);render()}
+function editKpi(id){
+  const k = D.kpis.find(x=>x.id===id||x.id==id);
+  if(!k) return;
+  S.form = {
+    editKpiId: id,
+    semaine: k.semaine||'',
+    dates: k.dates||'',
+    impressions: k.impressions||0,
+    clics: k.clics||0,
+    leads: k.leads||0,
+    clients_ob: k.clients_ob||0,
+    depenses: k.depenses||0,
+    revenus: k.revenus||0,
+    panier: k.panier||0
+  };
+  $('modal-content').innerHTML = mKpi();
+  $('modal-overlay').classList.add('open');
+}
+
 async function delKpi(id){if(!confirm('Supprimer ?'))return;await sb.from('kpis').delete().eq('id',id);D.kpis=D.kpis.filter(k=>k.id!==id);render()}
 
 async function selAns(mId,qi,oi){
@@ -2716,7 +3144,7 @@ function closeMod(){S.openModuleId=null;render()}
 function setTab(t){S.activeTab=t;render()}
 
 function renderPage(){
-  const pages={dashboard:pageDashboard,crm:pageCRM,prestations_hist:pagePrestationsHist,compta:pageCompta,formation:pageFormation,depenses:pageDepenses,kpifb:pageKpiFb,factures:pageFactures,profil:pageProfil};
+  const pages={dashboard:pageDashboard,crm:pageCRM,tasks_page:pageTasksAll,prestations_hist:pagePrestationsHist,compta:pageCompta,formation:pageFormation,depenses:pageDepenses,kpifb:pageKpiFb,factures:pageFactures,profil:pageProfil};
   $('main').innerHTML=(pages[S.page]||pageDashboard)();
 }
 function render(){
