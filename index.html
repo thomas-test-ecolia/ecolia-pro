@@ -503,7 +503,7 @@ let D = { events:[], clients:[], depenses:[], kpis:[], quizState:{}, factures:[]
 ], profil:{siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#185FA5',iban:''}, nextFactureNum:1 };
 let S = {
   page:'dashboard', openModuleId:null, activeTab:'videos',
-  factureTab:'factures', tauxURSSAF:22, crmView:'tous', prestView:'semaine', prestStatut:'tous', crmClientId:null, clientDetailTab:null, newDoc:null, editDocId:null, formDoc:null, histMoisKey:null, crmStatutFilter:'tous', crmSort:'alpha',
+  factureTab:'factures', tauxURSSAF:22, crmView:'tous', prestView:'semaine', prestStatut:'tous', crmClientId:null, clientDetailTab:null, newDoc:null, editDocId:null, formDoc:null, histMoisKey:null, crmStatutFilter:'tous', crmSort:'recent',
   comptaYear:new Date().getFullYear(), comptaMonth:new Date().getMonth(),
   cal:{year:new Date().getFullYear(),month:new Date().getMonth(),sel:{d:new Date().getDate(),m:new Date().getMonth(),y:new Date().getFullYear()}},
   modal:null, form:{}, crmQ:''
@@ -1073,7 +1073,7 @@ function pageDashboard(){
   }).reduce((s,i)=>s+(i.montant||0),0);
   const tDep = D.depenses.reduce((s,d)=>s+(d.montant||0),0);
   const totalDep = tDep;
-  const tauxURSSAF = S.tauxURSSAF||22;
+  const tauxURSSAF = S.tauxURSSAF!=null ? S.tauxURSSAF : 22;
   const urssafMonthly = Math.round(caMonthly * tauxURSSAF / 100);
   const depMonthly = D.depenses.filter(d=>{
     const prefix = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
@@ -2013,18 +2013,28 @@ function getDepensesForMonth(year, month){
   return manuelle;
 }
 
+function getTauxForMonth(y, m){
+  if(!S.tauxParMois) S.tauxParMois = {};
+  const key = `${y}-${m}`;
+  return S.tauxParMois[key] != null ? S.tauxParMois[key] : (S.tauxURSSAF!=null ? S.tauxURSSAF : 22);
+}
+function setTauxForMonth(y, m, val){
+  if(!S.tauxParMois) S.tauxParMois = {};
+  S.tauxParMois[`${y}-${m}`] = val;
+}
+
 function pageCompta(){
   const now = new Date();
   const tR = getTotalCA();
   const caWeekly = getWeekCA();
-  const tauxURSSAF = S.tauxURSSAF || 22;
   const tD = D.depenses.reduce((s,d)=>s+(d.montant||0),0);
-  const urssafTotal = Math.round(tR * tauxURSSAF / 100);
-  const netTotal = tR - tD - urssafTotal;
   const caMonthly = getMonthCA();
   // Mois sélectionné pour le simulateur
   const selYear = S.comptaYear || now.getFullYear();
   const selMonth = S.comptaMonth !== undefined ? S.comptaMonth : now.getMonth();
+  const tauxURSSAF = getTauxForMonth(selYear, selMonth);
+  const urssafTotal = Math.round(tR * tauxURSSAF / 100);
+  const netTotal = tR - tD - urssafTotal;
   const selClients = getClientsForMonth(selYear, selMonth);
   const selCA = getMonthCA(selYear, selMonth);
   const selDep = getDepensesForMonth(selYear, selMonth).reduce((s,d)=>s+(d.montant||0),0);
@@ -2039,10 +2049,11 @@ function pageCompta(){
     const cls = getClientsForMonth(y,m);
     const ca = getMonthCA(y,m);
     const dep = getDepensesForMonth(y,m).reduce((s,d)=>s+(d.montant||0),0);
-    const urssaf = Math.round(ca*tauxURSSAF/100);
+    const taux = getTauxForMonth(y,m);
+    const urssaf = Math.round(ca*taux/100);
     const net = ca-dep-urssaf;
     const isFuture = d > now;
-    months12.push({y,m,label:d.toLocaleString('fr-FR',{month:'short',year:'numeric'}),ca,dep,urssaf,net,nb:cls.length,isFuture});
+    months12.push({y,m,label:d.toLocaleString('fr-FR',{month:'short',year:'numeric'}),ca,dep,urssaf,net,nb:cls.length,isFuture,taux});
   }
 
   const selLabel = new Date(selYear,selMonth,1).toLocaleString('fr-FR',{month:'long',year:'numeric'});
@@ -2071,12 +2082,12 @@ function pageCompta(){
     <div style="padding:1.25rem">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:1rem">
         <div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Taux URSSAF</div>
-          <select onchange="S.tauxURSSAF=parseFloat(this.value);renderPage()" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary);color:var(--text-primary)">
-            <option value="0" ${(S.tauxURSSAF||22)===0?'selected':''}>0% — Désactivé</option>
-            <option value="22" ${(S.tauxURSSAF||22)==22?'selected':''}>22% — Services</option>
-            <option value="12.3" ${S.tauxURSSAF==12.3?'selected':''}>12.3% — Commerce</option>
-            <option value="21.1" ${S.tauxURSSAF==21.1?'selected':''}>21.1% — Libéral</option>
+          <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Taux URSSAF — ${selLabel}</div>
+          <select onchange="setTauxForMonth(${selYear},${selMonth},parseFloat(this.value));renderPage()" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary);color:var(--text-primary)">
+            <option value="0" ${tauxURSSAF===0?'selected':''}>0% — Désactivé</option>
+            <option value="22" ${tauxURSSAF===22?'selected':''}>22% — Services</option>
+            <option value="12.3" ${tauxURSSAF==12.3?'selected':''}>12.3% — Commerce</option>
+            <option value="21.1" ${tauxURSSAF==21.1?'selected':''}>21.1% — Libéral</option>
           </select>
         </div>
         <div style="background:var(--blue-light);border-radius:var(--radius-md);padding:0.75rem">
