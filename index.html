@@ -1366,22 +1366,21 @@ function pageClientDetail(clientId){
   </div>`:''}`;
 }
 
-function saveClientNote(clientId){
+async function saveClientNote(clientId){
   const note = document.getElementById('client-notes-area')?.value||'';
   if(!D.clientNotes) D.clientNotes = {};
   D.clientNotes[clientId] = note;
-  try{ localStorage.setItem('ecolia_notes_'+currentUser.id, JSON.stringify(D.clientNotes)); }catch(e){}
+  try{ await sb.from('clients').update({notes:note}).eq('id',clientId); }catch(e){ console.error(e); }
   // Show saved feedback
   const btn = document.querySelector('[onclick*="saveClientNote"]');
   if(btn){ const orig=btn.textContent; btn.textContent='✅ Sauvegardé !'; setTimeout(()=>btn.textContent=orig,2000); }
 }
 
 function loadClientNotes(){
-  try{
-    const saved = localStorage.getItem('ecolia_notes_'+currentUser.id);
-    if(saved) D.clientNotes = JSON.parse(saved);
-    else D.clientNotes = {};
-  }catch(e){ D.clientNotes={}; }
+  if(!D.clientNotes) D.clientNotes = {};
+  D.clients.forEach(c => {
+    if(c.notes) D.clientNotes[c.id] = c.notes;
+  });
 }
 
 function openTaskModal(clientId, clientName){
