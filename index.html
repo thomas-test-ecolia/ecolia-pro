@@ -1376,6 +1376,13 @@ async function saveClientNote(clientId){
   if(btn){ const orig=btn.textContent; btn.textContent='✅ Sauvegardé !'; setTimeout(()=>btn.textContent=orig,2000); }
 }
 
+function loadProfil(){
+  try{
+    const saved = localStorage.getItem('ecolia_profil_'+currentUser.id);
+    if(saved) D.profil = JSON.parse(saved);
+  }catch(e){}
+}
+
 function loadClientNotes(){
   if(!D.clientNotes) D.clientNotes = {};
   D.clients.forEach(c => {
