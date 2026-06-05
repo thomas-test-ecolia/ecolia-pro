@@ -3035,7 +3035,7 @@ function pageProfil(){
       <td style="white-space:normal;max-width:500px;word-wrap:break-word;color:var(--text-secondary)">${p.description||'—'}</td>
       
       <td class="td-right">${p.prix}€</td>
-      <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);try{localStorage.setItem('ecolia_prestations_'+currentUser.id,JSON.stringify(D.prestations));}catch(e){}render();return;if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();(${p.id})">×</span></td>
+      <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();(${p.id})">×</span></td>
     </tr>`).join('')}
     </tbody></table>
   </div>`;
