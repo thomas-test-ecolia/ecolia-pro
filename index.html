@@ -3124,7 +3124,7 @@ function savePrestation(){if(!S.form.nom?.trim()){alert('Nom requis.');return;}i
   closeModal(); render();
 }
 
-function editPrestation(id){
+function delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);try{localStorage.setItem('ecolia_prestations_'+currentUser.id,JSON.stringify(D.prestations));}catch(e){}render();} function editPrestation(id){
   const p = D.prestations.find(x=>x.id===id||x.id==id);
   if(!p) return;
   S.form = {editPrestId:p.id, nom:p.nom, description:p.description||'', prix:p.prix||0};
