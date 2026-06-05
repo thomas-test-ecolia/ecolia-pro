@@ -1325,7 +1325,7 @@ function pageClientDetail(clientId){
   ${tab==='notes'?`
   <div class="card" style="padding:1rem">
     <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Notes sur ce prospect / client (appels, remarques...)</div>
-    <textarea id="client-notes-area" style="width:100%;min-height:200px;padding:12px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit" placeholder="Ex: Appelé le 12/04 — pas répondu. Rappeler mercredi matin. Intéressé par le forfait Premium...">${clientNotes}</textarea>
+    <textarea id="client-notes-area" oninput="autoSaveNote('${c.id}',this.value)" style="width:100%;min-height:200px;padding:12px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit" placeholder="Ex: Appelé le 12/04 — pas répondu. Rappeler mercredi matin. Intéressé par le forfait Premium...">${clientNotes}</textarea>
     <button class="btn primary" style="margin-top:8px" onclick="saveClientNote('${c.id}')">💾 Sauvegarder</button>
   </div>`:''}
 
@@ -1366,8 +1366,8 @@ function pageClientDetail(clientId){
   </div>`:''}`;
 }
 
-async function saveClientNote(clientId){
-  const note = document.getElementById('client-notes-area')?.value||'';
+let _noteTimer=null;function autoSaveNote(clientId,val){clearTimeout(_noteTimer);_noteTimer=setTimeout(()=>saveClientNote(clientId,val),2000);} async function saveClientNote(clientId,val){   const note=val!==undefined?val:(document.getElementById('client-notes-area')?.value||'');
+
   if(!D.clientNotes) D.clientNotes = {};
   D.clientNotes[clientId] = note;
   try{ await sb.from('clients').update({notes:note}).eq('id',clientId); }catch(e){ console.error(e); }
