@@ -3019,7 +3019,7 @@ function pageProfil(){
         <div class="field"><label>Logo</label>
           <div id="logo-drop" onclick="document.getElementById('logo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--blue)'" ondragleave="this.style.borderColor='var(--gray-border-mid)'" ondrop="handleLogoDrop(event)" style="border:2px dashed var(--gray-border-mid);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s">
             ${p.logo
-              ? `<img src="${p.logo}" style="height:60px;max-width:200px;object-fit:contain;margin-bottom:8px"><br><span style="font-size:12px;color:var(--text-secondary)">Clique ou glisse pour changer</span>`
+              ? `<img src="${p.logo}" style="height:60px;max-width:400px;object-fit:contain;margin-bottom:8px"><br><span style="font-size:12px;color:var(--text-secondary)">Clique ou glisse pour changer</span>`
               : `<div style="font-size:24px;margin-bottom:8px">🖼️</div><div style="font-size:13px;font-weight:500;color:var(--blue)">Clique ou glisse ton logo ici</div><div style="font-size:11px;color:var(--text-secondary);margin-top:4px">PNG, JPG, SVG — max 2MB</div>`
             }
           </div>
@@ -3032,7 +3032,7 @@ function pageProfil(){
   <div class="card"><div class="card-head"><span class="card-title">Mes prestations types</span><button class="btn sm" onclick="openModal('prestation')">+ Ajouter</button></div>
     <table><thead><tr><th>Prestation</th><th>Description</th><th class="td-right">Prix HT</th><th></th></tr></thead><tbody>
     ${D.prestations.map(p=>`<tr>
-      <td style="white-space:normal;max-width:250px;word-wrap:break-word;color:var(--text-secondary)">${p.description||'—'}</td>
+      <td style="white-space:normal;max-width:500px;word-wrap:break-word;color:var(--text-secondary)">${p.description||'—'}</td>
       <td style="color:var(--text-secondary)">${p.description||'—'}</td>
       <td class="td-right">${p.prix}€</td>
       <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();(${p.id})">×</span></td>
