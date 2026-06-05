@@ -3076,7 +3076,7 @@ function convertToFacture(id){
   render();
 }
 
-function delDoc(id){
+function markPaid(id){const doc=D.factures.find(f=>f.id===id);if(!doc)return;doc.statut='paye';try{localStorage.setItem('ecolia_factures_'+currentUser.id,JSON.stringify(D.factures));}catch(e){}render();} function delDoc(id){
   if(!confirm('Supprimer ce document ?')) return;
   D.factures=D.factures.filter(f=>f.id!==id);
   try{localStorage.setItem('ecolia_factures_'+currentUser.id,JSON.stringify(D.factures));}catch(e){}
