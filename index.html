@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Ecolia Pro — Espace élève</title>
-<meta name="description" content="Ecolia Pro — Lance et développe ton business de nettoyage auto">
+<title>Académie — Espace élève</title>
+<meta name="description" content="Académie — Lance et développe ton business de nettoyage auto">
 <meta name="theme-color" content="#185FA5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Ecolia Pro">
+<meta name="apple-mobile-web-app-title" content="Académie">
 <meta name="mobile-web-app-capable" content="yes">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -503,7 +503,7 @@ let D = { events:[], clients:[], depenses:[], kpis:[], quizState:{}, factures:[]
 ], profil:{siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#185FA5',iban:''}, nextFactureNum:1 };
 let S = {
   page:'dashboard', openModuleId:null, activeTab:'videos',
-  factureTab:'factures', tauxURSSAF:22, crmView:'tous', prestView:'semaine', prestStatut:'tous', crmClientId:null, clientDetailTab:null, newDoc:null, editDocId:null, formDoc:null, histMoisKey:null, crmStatutFilter:'tous', crmSort:'recent',
+  factureTab:'factures', tauxURSSAF:22, crmView:'tous', prestView:'semaine', prestStatut:'tous', crmClientId:null, clientDetailTab:null, newDoc:null, editDocId:null, formDoc:null, histMoisKey:null, crmStatutFilter:'tous', crmSort:'recent', depMonth:null,
   comptaYear:new Date().getFullYear(), comptaMonth:new Date().getMonth(),
   cal:{year:new Date().getFullYear(),month:new Date().getMonth(),sel:{d:new Date().getDate(),m:new Date().getMonth(),y:new Date().getFullYear()}},
   modal:null, form:{}, crmQ:''
@@ -572,7 +572,7 @@ function renderAdmin(){
       <!-- Header -->
       <div style="background:#185FA5;color:white;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center">
         <div>
-          <div style="font-size:18px;font-weight:700">🛡️ Panneau Admin — Ecolia Pro</div>
+          <div style="font-size:18px;font-weight:700">🛡️ Panneau Admin — Académie</div>
           <div style="font-size:12px;opacity:0.8">Connecté en tant que ${currentUser.email}</div>
         </div>
         <button onclick="adminLogout()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">Déconnexion</button>
@@ -739,7 +739,7 @@ function renderLogin(){
     <div class="login-left">
       <div class="login-left-logo">
         <div class="login-left-icon"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="9" r="4.5" fill="white"/><path d="M4 24c0-5 4-9 9-9s9 4 9 9" stroke="white" stroke-width="2"/></svg></div>
-        <div><div class="login-left-name">Ecolia Pro</div><div class="login-left-sub">Espace formation</div></div>
+        <div><div class="login-left-name">Académie</div><div class="login-left-sub">Espace formation</div></div>
       </div>
       <div class="login-left-title">Lance et développe ton business de nettoyage auto</div>
       <div class="login-left-desc">Formation complète, CRM clients, suivi finances et KPI Facebook — tout en un seul endroit, accessible depuis n'importe quel appareil.</div>
@@ -785,7 +785,7 @@ function renderLoginTab(){
         <div class="login-tab" onclick="switchTab('login')">Connexion</div>
         <div class="login-tab active" onclick="switchTab('register')">Créer un compte</div>
       </div>
-      <div class="login-section-title">Rejoins Ecolia Pro</div>
+      <div class="login-section-title">Rejoins Académie</div>
       <div class="login-section-sub">Crée ton compte pour accéder à la formation</div>
       <div class="login-field-row">
         <div class="login-field"><label>Prénom *</label><input id="reg-prenom" placeholder="Thomas"></div>
@@ -927,7 +927,7 @@ function renderSuspended(msg){
       <div style="max-width:400px;text-align:center">
         <div style="font-size:48px;margin-bottom:1rem">🔒</div>
         <h2 style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:0.5rem">Accès suspendu</h2>
-        <p style="color:#666;font-size:14px;line-height:1.6;margin-bottom:1.5rem">${msg||'Ton accès à Ecolia Pro a été suspendu. Contacte Thomas pour régulariser ta situation.'}</p>
+        <p style="color:#666;font-size:14px;line-height:1.6;margin-bottom:1.5rem">${msg||'Ton accès à Académie a été suspendu. Contacte Thomas pour régulariser ta situation.'}</p>
         <a href="mailto:contact.ecolia76@gmail.com" style="display:inline-block;background:#185FA5;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">Contacter Thomas</a>
         <div style="margin-top:1rem"><button onclick="adminLogout()" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer">Se déconnecter</button></div>
       </div>
@@ -994,7 +994,7 @@ function renderSidebar(){
   ];
   let h=`<div class="logo">
     <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" fill="white"/><path d="M3 18c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="white" stroke-width="1.8"/></svg></div>
-    <div class="logo-name">Ecolia Pro</div>
+    <div class="logo-name">Académie</div>
     <div class="logo-sub">Espace élève</div>
     <div class="logo-user">${name}</div>
   </div>`;
@@ -1325,8 +1325,8 @@ function pageClientDetail(clientId){
   ${tab==='notes'?`
   <div class="card" style="padding:1rem">
     <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Notes sur ce prospect / client (appels, remarques...)</div>
-    <textarea id="client-notes-area" oninput="autoSaveNote('${c.id}',this.value)" style="width:100%;min-height:200px;padding:12px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit" placeholder="Ex: Appelé le 12/04 — pas répondu. Rappeler mercredi matin. Intéressé par le forfait Premium...">${clientNotes}</textarea>
-    <button class="btn primary" style="margin-top:8px" onclick="saveClientNote('${c.id}')">💾 Sauvegarder</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;color:var(--text-secondary)">Notes</span><span id="note-save-indicator" style="font-size:11px;color:var(--green-mid);opacity:0.4;transition:opacity 0.5s">${(()=>{try{const nd=JSON.parse(localStorage.getItem('ecolia_notedates_'+currentUser.id)||'{}');const d=nd[c.id];return d?'✅ '+new Date(d).toLocaleDateString('fr-FR')+' à '+new Date(d).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';} catch(e){return '';}})()}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${[['📞','Appelé, pas répondu'],['✉️','Messagerie laissée'],['📱','Messagerie + SMS'],['✅','Intéressé'],['❌','Pas intéressé']].map(([i,t])=><button onclick="(()=>{const a=document.getElementById('client-notes-area');if(!a)return;const d=new Date().toLocaleDateString('fr-FR')+' '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});a.value+=(a.value?'\n':'')+'['+d+'] ${i} ${t}';autoSaveNote('${c.id}',a.value);})()" style="padding:3px 9px;border:0.5px solid var(--gray-border-mid);border-radius:100px;font-size:11px;cursor:pointer;background:var(--bg-secondary);font-family:var(--font)">${i} ${t}</button>).join('')}</div><textarea id="client-notes-area" oninput="autoSaveNote('${c.id}',this.value)" style="width:100%;min-height:200px;padding:12px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit" placeholder="Ex: Appelé le 12/04 — pas répondu. Rappeler mercredi matin. Intéressé par le forfait Premium...">${clientNotes}</textarea>
+    <div style="margin-top:10px;border:0.5px solid var(--gray-border);border-radius:var(--radius-md);overflow:hidden"><div onclick="const f=document.getElementById('qtf-${c.id}');f.style.display=f.style.display==='none'?'block':'none'" style="padding:8px 12px;cursor:pointer;font-size:12px;font-weight:500;color:var(--blue);background:var(--blue-light)">▶ Planifier une tâche</div><div id="qtf-${c.id}" style="display:none;padding:12px;background:var(--bg-secondary)"><div style="display:grid;grid-template-columns:1fr 130px auto;gap:8px;align-items:end"><div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px">Tâche</div><input id="qtt-${c.id}" placeholder="Rappeler, Envoyer devis..." style="width:100%;padding:7px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;box-sizing:border-box;font-family:var(--font)"></div><div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px">Échéance</div><input id="qtd-${c.id}" type="date" value="${new Date(Date.now()+86400000).toISOString().slice(0,10)}" style="width:100%;padding:7px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;box-sizing:border-box"></div><button onclick="(()=>{const t=document.getElementById('qtt-${c.id}');const d=document.getElementById('qtd-${c.id}');if(!t.value.trim()){t.focus();return;}if(!D.tasks)D.tasks=[];D.tasks.push({id:Date.now().toString(),client_id:'${c.id}',client_name:'${c.name.replace(/'/g,"\'")}',titre:t.value.trim(),date:d.value||'',done:false,created_at:new Date().toISOString().slice(0,10)});try{localStorage.setItem('ecolia_tasks_'+currentUser.id,JSON.stringify(D.tasks));}catch(e){}t.value='';render();})()" style="padding:7px 14px;background:var(--blue);color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-size:13px;white-space:nowrap">+ Ajouter</button></div></div></div>
   </div>`:''}
 
   ${tab==='taches'?`
@@ -1366,7 +1366,7 @@ function pageClientDetail(clientId){
   </div>`:''}`;
 }
 
-let _noteTimer=null;function autoSaveNote(clientId,val){clearTimeout(_noteTimer);_noteTimer=setTimeout(()=>saveClientNote(clientId,val),2000);} async function saveClientNote(clientId,val){   const note=val!==undefined?val:(document.getElementById('client-notes-area')?.value||'');
+let _noteTimer=null;function autoSaveNote(clientId,val){clearTimeout(_noteTimer);_noteTimer=setTimeout(()=>saveClientNote(clientId,val),2000);} async function saveClientNote(clientId,val){if(!D.clientNotesDates)D.clientNotesDates={};D.clientNotesDates[clientId]=new Date().toISOString();try{localStorage.setItem('ecolia_notedates_'+currentUser.id,JSON.stringify(D.clientNotesDates));}catch(e){}const ind=document.getElementById('note-save-indicator');if(ind){const t=new Date();ind.textContent='✅ '+t.toLocaleDateString('fr-FR')+' à '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});ind.style.opacity='1';setTimeout(()=>ind.style.opacity='0.4',3000);}   const note=val!==undefined?val:(document.getElementById('client-notes-area')?.value||'');
 
   if(!D.clientNotes) D.clientNotes = {};
   D.clientNotes[clientId] = note;
@@ -2216,7 +2216,7 @@ function pageModuleDetail(id){
   ${content[tab]||''}`;
 }
 
-function pageDepenses(){
+function pageDepenses(){   const now=new Date();   const curM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');   const allDep=D.depenses;   if(!S.depMonth)S.depMonth=curM;   const selM=S.depMonth;   const total=allDep.reduce((s,d)=>s+(d.montant||0),0);   const monthDep=allDep.filter(d=>d.date&&d.date.startsWith(curM));   const totalMonth=monthDep.reduce((s,d)=>s+(d.montant||0),0);   const parCat={};allDep.forEach(d=>{parCat[d.categorie]=(parCat[d.categorie]||0)+(d.montant||0)});   const top=Object.entries(parCat).sort((a,b)=>b[1]-a[1])[0];   const monthsSet=new Set(allDep.filter(d=>d.date).map(d=>d.date.slice(0,7)));   const monthKeys=[...monthsSet].sort((a,b)=>b.localeCompare(a));   if(!monthKeys.includes(curM))monthKeys.unshift(curM);   const selDeps=allDep.filter(d=>d.date&&d.date.startsWith(selM)).sort((a,b)=>(b.date||'').localeCompare(a.date||''));   const selTotal=selDeps.reduce((s,d)=>s+(d.montant||0),0);   const selLabel=new Date(selM+'-01').toLocaleString('fr-FR',{month:'long',year:'numeric'});   return`<div class="topbar"><div class="page-title">Dépenses entreprise</div><button class="btn primary" onclick="openModal('depense')">+ Ajouter une dépense</button></div>   <div class="stats-grid cols3" style="margin-bottom:1rem">     <div class="stat-card" style="border-left:3px solid var(--red-mid)"><div class="stat-label">💸 Ce mois — ${now.toLocaleString('fr-FR',{month:'long'})}</div><div class="stat-value" style="color:var(--red-mid)">${totalMonth.toFixed(0)}€</div><div class="stat-sub" style="color:var(--text-secondary)">${monthDep.length} dépense${monthDep.length>1?'s':''}</div></div>     <div class="stat-card"><div class="stat-label">Total général</div><div class="stat-value">${total.toFixed(0)}€</div><div class="stat-sub">Toutes périodes · ${allDep.length} dépenses</div></div>     <div class="stat-card"><div class="stat-label">Catégorie principale</div><div class="stat-value" style="font-size:14px">${top?top[0]:'—'}</div>${top?`<div class="stat-sub">${top[1].toFixed(0)}€</div>`:''}</div>   </div>   <div style="display:grid;grid-template-columns:190px 1fr;gap:12px;align-items:start">     <div class="card" style="overflow:hidden">       <div style="padding:9px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary);border-bottom:0.5px solid var(--gray-border)">Historique</div>       ${monthKeys.map(mk=>{const md=allDep.filter(d=>d.date&&d.date.startsWith(mk));const mt=md.reduce((s,d)=>s+(d.montant||0),0);const ml=new Date(mk+'-01').toLocaleString('fr-FR',{month:'long',year:'numeric'});const isSel=selM===mk;const isCur=mk===curM;return`<div onclick="S.depMonth='${mk}';renderPage()" style="padding:9px 12px;cursor:pointer;border-bottom:0.5px solid var(--gray-border);background:${isSel?'var(--red-light)':'transparent'}"><div style="font-size:12px;font-weight:${isCur?'600':'400'};color:${isSel?'var(--red-dark)':'var(--text-primary)'}">${ml}${isCur?' ●':''}</div><div style="font-size:11px;color:${isSel?'var(--red-mid)':'var(--text-secondary)'};">${mt>0?mt.toFixed(0)+'€':'—'} · ${md.length} dép.</div></div>`;}).join('')}     </div>     <div>       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem"><div style="font-size:15px;font-weight:600">${selLabel}</div><div style="display:flex;gap:8px;align-items:center"><button id="btn-del-selected" class="btn sm" style="color:var(--red-mid);display:none" onclick="delSelectedDep()">🗑️ Supprimer</button><span style="font-size:15px;font-weight:700;color:var(--red-mid)">${selTotal.toFixed(0)}€</span></div></div>       <div class="card"><div class="tbl-wrap"><table>         <thead><tr><th style="width:30px"><input type="checkbox" id="dep-check-all" onchange="toggleAllDep(this.checked)"></th><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th>Description</th><th class="td-right">Montant</th><th>Moyen</th><th></th></tr></thead>         <tbody>${selDeps.length===0?`<tr><td colspan="8" class="empty">Aucune dépense ce mois — ajoute ta première !</td></tr>`:selDeps.map(d=>`<tr><td><input type="checkbox" class="dep-check" value="${d.id||''}" onchange="updateDepSelection()"></td><td style="color:var(--text-secondary)">${d.date||'—'}</td><td><strong>${d.fournisseur}</strong></td><td><span class="pill pill-amber">${d.categorie}</span></td><td style="color:var(--text-secondary)">${d.description||''}</td><td class="td-right" style="color:var(--red-mid);font-weight:600">${(d.montant||0).toFixed(2)}€</td><td style="color:var(--text-secondary)">${d.moyen||'—'}</td><td style="display:flex;gap:6px"><span style="cursor:pointer;color:var(--blue);font-size:12px" onclick="editDep('${d.id}')">✏️</span><span class="del-btn" onclick="delDep('${d.id}')">×</span></td></tr>`).join('')}         </tbody>       </table></div></div>     </div>   </div>`;
   const now = new Date();
   const curM = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   const allDep = D.depenses;
@@ -3178,8 +3178,8 @@ function render(){
 // ═══════════════════════════════════
 // PWA manifest injection
 const manifestData = {
-  name: "Ecolia Pro",
-  short_name: "Ecolia Pro",
+  name: "Académie",
+  short_name: "Académie",
   description: "Espace formation nettoyage auto",
   start_url: "/",
   display: "standalone",
@@ -3211,7 +3211,7 @@ function showInstallBanner(){
   const banner = document.createElement('div');
   banner.id = 'install-banner';
   banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#185FA5;color:white;padding:10px 20px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;font-family:-apple-system,sans-serif;white-space:nowrap';
-  banner.textContent = 'Installer Ecolia Pro';
+  banner.textContent = 'Installer Académie';
   banner.onclick = async () => {
     if(deferredPrompt){ deferredPrompt.prompt(); const r = await deferredPrompt.userChoice; deferredPrompt=null; }
     banner.remove();
