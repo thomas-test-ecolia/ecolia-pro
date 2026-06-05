@@ -1376,7 +1376,7 @@ async function saveClientNote(clientId){
   if(btn){ const orig=btn.textContent; btn.textContent='✅ Sauvegardé !'; setTimeout(()=>btn.textContent=orig,2000); }
 }
 
-function loadProfil(){
+function loadProfil(){try{const sp=localStorage.getItem('ecolia_prestations_'+currentUser.id);if(sp)D.prestations=JSON.parse(sp);}catch(e){}try{
   try{
     const saved = localStorage.getItem('ecolia_profil_'+currentUser.id);
     if(saved) D.profil = JSON.parse(saved);
@@ -3035,7 +3035,7 @@ function pageProfil(){
       <td style="white-space:normal;max-width:500px;word-wrap:break-word;color:var(--text-secondary)">${p.description||'—'}</td>
       
       <td class="td-right">${p.prix}€</td>
-      <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();(${p.id})">×</span></td>
+      <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);try{localStorage.setItem('ecolia_prestations_'+currentUser.id,JSON.stringify(D.prestations));}catch(e){}render();return;if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();(${p.id})">×</span></td>
     </tr>`).join('')}
     </tbody></table>
   </div>`;
@@ -3112,7 +3112,7 @@ function delDoc(id){
 
 function editDoc(id){ S.editDocId=id; S.previewDocId=null; S.formDoc=null; render(); }
 
-function savePrestation(){
+function savePrestation(){if(!S.form.nom?.trim()){alert('Nom requis.');return;}if(S.form.editPrestId){const idx=D.prestations.findIndex(p=>p.id===S.form.editPrestId);if(idx>=0)D.prestations[idx]={...D.prestations[idx],nom:S.form.nom.trim(),description:S.form.description||'',prix:parseFloat(S.form.prix)||0};}else{const newId=Math.max(0,...D.prestations.map(p=>p.id))+1;D.prestations.push({id:newId,nom:S.form.nom.trim(),description:S.form.description||'',prix:parseFloat(S.form.prix)||0});}try{localStorage.setItem('ecolia_prestations_'+currentUser.id,JSON.stringify(D.prestations));}catch(e){}closeModal();render();return;
   if(!S.form.nom?.trim()){ alert('Nom requis.'); return; }
   if(S.form.editPrestId){
     const idx = D.prestations.findIndex(p=>p.id===S.form.editPrestId);
