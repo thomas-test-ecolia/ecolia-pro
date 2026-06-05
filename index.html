@@ -1526,7 +1526,7 @@ function pageCRM(){
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Nom</th>
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Téléphone</th>
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Statut du lead</th>
-          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">CA total</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Formulaire</th>
+          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">CA total</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Formulaire</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Ville</th>
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)"></th>
         </tr>
       </thead>
@@ -1553,7 +1553,7 @@ function pageCRM(){
                 ${STATUTS.map(s=>`<option value="${s.v}"${(c.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}
               </select>
             </td>
-            <td style="padding:12px 16px;font-size:13px;font-weight:500;color:${clientCA>0?'var(--blue)':'var(--text-secondary)'}">${clientCA>0?clientCA.toFixed(0)+'€':'—'}</td><td style="padding:12px 16px;font-size:11px;color:var(--text-secondary)">${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+new Date(c.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+            <td style="padding:12px 16px;font-size:13px;font-weight:500;color:${clientCA>0?'var(--blue)':'var(--text-secondary)'}">${clientCA>0?clientCA.toFixed(0)+'€':'—'}</td><td style="padding:12px 16px;font-size:11px;color:var(--text-secondary)">${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+new Date(c.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '—'}</td><td style="padding:12px 16px;font-size:12px;color:var(--text-secondary)">${c.ville||'—'}</td>
             <td style="padding:12px 16px" onclick="event.stopPropagation()">
               <div style="display:flex;gap:8px;align-items:center">
                 ${c.phone?`<a href="sms:${c.phone}" style="font-size:14px;text-decoration:none">📱</a>`:''}
