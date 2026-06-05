@@ -3033,7 +3033,7 @@ function pageProfil(){
     <table><thead><tr><th>Prestation</th><th>Description</th><th class="td-right">Prix HT</th><th></th></tr></thead><tbody>
     ${D.prestations.map(p=>`<tr>
       <td style="white-space:normal;max-width:500px;word-wrap:break-word;color:var(--text-secondary)">${p.description||'—'}</td>
-      <td style="color:var(--text-secondary)">${p.description||'—'}</td>
+      
       <td class="td-right">${p.prix}€</td>
       <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();(${p.id})">×</span></td>
     </tr>`).join('')}
