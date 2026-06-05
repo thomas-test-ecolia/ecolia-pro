@@ -3032,10 +3032,10 @@ function pageProfil(){
   <div class="card"><div class="card-head"><span class="card-title">Mes prestations types</span><button class="btn sm" onclick="openModal('prestation')">+ Ajouter</button></div>
     <table><thead><tr><th>Prestation</th><th>Description</th><th class="td-right">Prix HT</th><th></th></tr></thead><tbody>
     ${D.prestations.map(p=>`<tr>
-      <td><strong>${p.nom}</strong></td>
+      <td style="white-space:normal;max-width:250px;word-wrap:break-word;color:var(--text-secondary)">${p.description||'—'}</td>
       <td style="color:var(--text-secondary)">${p.description||'—'}</td>
       <td class="td-right">${p.prix}€</td>
-      <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(${p.id})">×</span></td>
+      <td><span style="cursor:pointer;color:var(--blue);font-size:12px;margin-right:8px" onclick="editPrestation(${p.id})">✏️</span><span class="del-btn" onclick="delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();(${p.id})">×</span></td>
     </tr>`).join('')}
     </tbody></table>
   </div>`;
