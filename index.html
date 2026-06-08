@@ -1410,7 +1410,7 @@ function mTask(){
 
 async function saveTask(){
   if(!S.form.taskTitre?.trim()){ alert('Titre requis.'); return; }
-  // task saved to Supabase below
+  // saved to Supabase
   const row={user_id:currentUser.id,client_id:S.form.taskClientId||'',client_name:S.form.taskClientName||'',titre:S.form.taskTitre.trim(),date:S.form.taskDate||'',done:false};
   const{data,error}=await sb.from('tasks').insert(row).select().single();
   if(error){alert('Erreur: '+error.message);return;}
