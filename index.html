@@ -489,6 +489,68 @@ function getStatutStyle(v){ return STATUTS.find(s=>s.v===v)||STATUTS[4]; }
 function pStLead(v){ const s=getStatutStyle(v); return `<span style="padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:${s.bg};color:${s.color}">${s.l}</span>`; }
 
 // ═══════════════════════════════════
+// RELANCES SMS MANUELLES (SMS2 / SMS3)
+// ═══════════════════════════════════
+// ⚠️ REMPLACE cette URL par celle de ton Zap "Catch Hook" Zapier
+const SMS_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/20806276/44kdx5r/';
+
+function chronoLead(createdAt){
+  if(!createdAt) return {txt:'—',color:'var(--text-tertiary)',bg:'transparent'};
+  const mins = Math.floor((Date.now()-new Date(createdAt).getTime())/60000);
+  if(isNaN(mins)||mins<0) return {txt:'—',color:'var(--text-tertiary)',bg:'transparent'};
+  let txt;
+  if(mins<60) txt=mins+' min';
+  else if(mins<1440) txt=Math.floor(mins/60)+' h';
+  else if(mins<2880) txt='1 j';
+  else txt='2 j +';
+  let color='#2d7a2d', bg='#e8f5e9';
+  if(mins>=300 && mins<1440){ color='#633806'; bg='#FAEEDA'; }
+  else if(mins>=1440){ color='#c0392b'; bg='#fde8e8'; }
+  return {txt,color,bg};
+}
+
+function smsToggle(c,which){
+  const on = which===2 ? !!c.sms2_sent : !!c.sms3_sent;
+  return `<span onclick="toggleSms('${c.id}',${which})" title="${on?'Deja envoye - cliquer pour annuler le marquage':'Cliquer pour envoyer le SMS '+which}" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+    <span style="width:34px;height:19px;border-radius:100px;background:${on?'#2d7a2d':'#d0d5d5'};position:relative;flex-shrink:0;transition:background .15s">
+      <span style="position:absolute;top:2px;left:${on?'17px':'2px'};width:15px;height:15px;border-radius:50%;background:white;transition:left .15s"></span>
+    </span>
+    <span style="font-size:10px;font-weight:600;color:${on?'#2d7a2d':'var(--text-tertiary)'}">${on?'ON':'OFF'}</span>
+  </span>`;
+}
+
+async function toggleSms(clientId,which){
+  const c = D.clients.find(x=>x.id===clientId||x.id==clientId);
+  if(!c) return;
+  const field = which===2 ? 'sms2_sent' : 'sms3_sent';
+  if(c[field]){
+    if(!confirm('Le SMS '+which+' est deja marque comme envoye.\n\nLe remettre en « non envoye » ? (aucun SMS ne partira)')) return;
+    const{error}=await sb.from('clients').update({[field]:false}).eq('id',clientId);
+    if(error){alert('Erreur : '+error.message);return;}
+    c[field]=false; renderPage(); return;
+  }
+  if(!c.phone){ alert('Ce prospect n\'a pas de numero de telephone.'); return; }
+  const quand = which===2 ? 'environ 5 a 6 h' : 'environ 24 h';
+  if(!confirm('Envoyer le SMS '+which+' a '+(c.name||'ce prospect')+' ('+c.phone+') ?\n\nConseille '+quand+' apres le remplissage du formulaire.')) return;
+  const prenom = (c.name||'').trim().split(' ')[0]||'';
+  const params = new URLSearchParams({
+    sms_type:'sms'+which,
+    phone:c.phone,
+    prenom:prenom,
+    nom:c.name||'',
+    ville:c.ville||'',
+    user_id: currentUser?currentUser.id:'',
+    client_id: String(c.id)
+  });
+  try{
+    await fetch(SMS_WEBHOOK_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:params.toString()});
+  }catch(e){ alert('Erreur d\'envoi : '+e.message); return; }
+  const{error}=await sb.from('clients').update({[field]:true}).eq('id',clientId);
+  if(error) alert('SMS transmis, mais erreur d\'enregistrement : '+error.message);
+  c[field]=true; renderPage();
+}
+
+// ═══════════════════════════════════
 // STATE
 // ═══════════════════════════════════
 let currentUser = null;
@@ -1471,6 +1533,13 @@ async function loadTasks(){
 
 
 function renderCRMTable(){
+  const el=document.getElementById('crm-search-input');
+  const pos=el?el.selectionStart:null;
+  renderPage();
+  const el2=document.getElementById('crm-search-input');
+  if(el2){ el2.focus(); if(pos!=null) try{el2.setSelectionRange(pos,pos);}catch(e){} }
+}
+function renderCRMTableLegacy(){
   const q = (S.crmQ||'').toLowerCase();
   const fl = D.clients.filter(c=>
     (c.name||'').toLowerCase().includes(q)||
@@ -1508,6 +1577,7 @@ function pageCRM(){
   if(S.crmClientId) return pageClientDetail(S.crmClientId);
   const q = (S.crmQ||'').toLowerCase();
   const filterStatut = S.crmStatutFilter||'tous';
+  const isTentative = filterStatut==='tentative';
 
   let fl = D.clients.filter(c=>
     (c.name||'').toLowerCase().includes(q)||
@@ -1551,7 +1621,7 @@ function pageCRM(){
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Nom</th>
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Téléphone</th>
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Statut du lead</th>
-          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">CA total</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Formulaire</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Ville</th>
+          <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">CA total</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Formulaire</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Ville</th>${isTentative?`<th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">Chrono</th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">SMS 2<div style="font-size:9px;font-weight:400;color:var(--text-tertiary)">conseille ~5-6 h apres</div></th><th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)">SMS 3<div style="font-size:9px;font-weight:400;color:var(--text-tertiary)">conseille ~24 h apres · -10%</div></th>`:''}
           <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:500;color:var(--text-secondary)"></th>
         </tr>
       </thead>
@@ -1578,7 +1648,7 @@ function pageCRM(){
                 ${STATUTS.map(s=>`<option value="${s.v}"${(c.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}
               </select>
             </td>
-            <td style="padding:12px 16px;font-size:13px;font-weight:500;color:${clientCA>0?'var(--blue)':'var(--text-secondary)'}">${clientCA>0?clientCA.toFixed(0)+'€':'—'}</td><td style="padding:12px 16px;font-size:11px;color:var(--text-secondary)">${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+new Date(c.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '—'}</td><td style="padding:12px 16px;font-size:12px;color:var(--text-secondary)">${c.ville||'—'}</td>
+            <td style="padding:12px 16px;font-size:13px;font-weight:500;color:${clientCA>0?'var(--blue)':'var(--text-secondary)'}">${clientCA>0?clientCA.toFixed(0)+'€':'—'}</td><td style="padding:12px 16px;font-size:11px;color:var(--text-secondary)">${c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+new Date(c.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '—'}</td><td style="padding:12px 16px;font-size:12px;color:var(--text-secondary)">${c.ville||'—'}</td>${isTentative?(()=>{const ch=chronoLead(c.created_at);return `<td style="padding:12px 16px"><span style="display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:${ch.bg};color:${ch.color}">${ch.txt}</span></td><td style="padding:12px 16px" onclick="event.stopPropagation()">${smsToggle(c,2)}</td><td style="padding:12px 16px" onclick="event.stopPropagation()">${smsToggle(c,3)}</td>`;})():''}
             <td style="padding:12px 16px" onclick="event.stopPropagation()">
               <div style="display:flex;gap:8px;align-items:center">
                 ${c.phone?`<a href="sms:${c.phone}" style="font-size:14px;text-decoration:none">📱</a>`:''}
