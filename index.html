@@ -493,6 +493,13 @@ function pStLead(v){ const s=getStatutStyle(v); return `<span style="padding:3px
 // ═══════════════════════════════════
 // ⚠️ REMPLACE cette URL par celle de ton Zap "Catch Hook" Zapier
 const SMS_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/20806276/44kdx5r/';
+// Comptes autorises a voir le chrono + les interrupteurs SMS2/SMS3.
+// Pour activer un nouvel eleve : ajoute son user_id ici ET dans les tables Zapier (Marque + Lien).
+const SMS_USERS = [
+  '6a489f40-d72c-407d-91a6-3dc86b8ea430', // Cleanova
+  '5579d7f5-06b3-4a55-b4a1-5abefb966b9c'  // Ecolia
+];
+function smsEnabled(){ return !!currentUser && SMS_USERS.includes(currentUser.id); }
 
 function chronoLead(createdAt){
   if(!createdAt) return {txt:'—',color:'var(--text-tertiary)',bg:'transparent'};
@@ -1577,7 +1584,7 @@ function pageCRM(){
   if(S.crmClientId) return pageClientDetail(S.crmClientId);
   const q = (S.crmQ||'').toLowerCase();
   const filterStatut = S.crmStatutFilter||'tous';
-  const isTentative = filterStatut==='tentative';
+  const isTentative = filterStatut==='tentative' && smsEnabled();
 
   let fl = D.clients.filter(c=>
     (c.name||'').toLowerCase().includes(q)||
