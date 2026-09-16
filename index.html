@@ -767,7 +767,7 @@ let D = { events:[], clients:[], depenses:[], kpis:[], quizState:{}, factures:[]
   {id:3,nom:'Nettoyage complet',prix:130,description:'Intérieur + extérieur complet'},
   {id:4,nom:'Protection céramique',prix:250,description:'Application céramique professionnelle'},
   {id:5,nom:'Polish / Correction',prix:180,description:'Correction peinture au polish'},
-], profil:{siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#0071E3',iban:''}, nextFactureNum:1 };
+], profil:{nom_entreprise:''}, nextFactureNum:1 };
 let S = {
   page:'dashboard', openModuleId:null, activeTab:'videos',
   factureTab:'factures', tauxURSSAF:22, crmView:'tous', prestView:'semaine', prestStatut:'tous', crmClientId:null, clientDetailTab:null, newDoc:null, editDocId:null, formDoc:null, histMoisKey:null, crmStatutFilter:'tous', crmSort:'recent', depMonth:null,
@@ -1206,7 +1206,7 @@ function renderSuspended(msg){
 // ═══════════════════════════════════
 async function loadAllData(){
   const uid=currentUser.id;
-  const [ev,cl,dep,kpi,qz,interv,tsk]=await Promise.all([
+  const [ev,cl,dep,kpi,qz,interv,tsk,prest]=await Promise.all([
     sb.from('events').select('*').eq('user_id',uid),
     sb.from('clients').select('*').eq('user_id',uid),
     sb.from('depenses').select('*').eq('user_id',uid),
@@ -1214,6 +1214,7 @@ async function loadAllData(){
     sb.from('quiz_state').select('*').eq('user_id',uid),
     sb.from('interventions').select('*').eq('user_id',uid),
     sb.from('tasks').select('*').eq('user_id',uid),
+    sb.from('prestations').select('*').eq('user_id',uid),
   ]);
   D.events=ev.data||[];
   D.clients=cl.data||[];
@@ -1223,6 +1224,19 @@ async function loadAllData(){
   D.tasks=tsk.data||[];
   D.quizState={};
   (qz.data||[]).forEach(q=>{D.quizState[q.module_id]={ans:q.answers||{},sub:q.submitted||false,dbId:q.id}});
+  D.prestations=prest.data||[];
+  if(D.prestations.length===0){
+    // Première utilisation : on amorce le catalogue avec des prestations types par défaut
+    const defaults=[
+      {nom:'Nettoyage intérieur',prix:80,description:'Aspirateur, shampoing, plastiques'},
+      {nom:'Nettoyage extérieur',prix:60,description:'Lavage carrosserie, jantes, vitres'},
+      {nom:'Nettoyage complet',prix:130,description:'Intérieur + extérieur complet'},
+      {nom:'Protection céramique',prix:250,description:'Application céramique professionnelle'},
+      {nom:'Polish / Correction',prix:180,description:'Correction peinture au polish'},
+    ].map(d=>({user_id:uid,...d}));
+    const seeded=await sb.from('prestations').insert(defaults).select();
+    D.prestations=seeded.data||[];
+  }
 }
 
 // ═══════════════════════════════════
@@ -1681,7 +1695,7 @@ let _noteTimer=null;function autoSaveNote(clientId,val){clearTimeout(_noteTimer)
   if(btn){ const orig=btn.textContent; btn.textContent='✅ Sauvegardé !'; setTimeout(()=>btn.textContent=orig,2000); }
 }
 
-function loadProfil(){try{const sp=localStorage.getItem('ecolia_prestations_'+currentUser.id);if(sp)D.prestations=JSON.parse(sp);}catch(e){}try{const saved=localStorage.getItem('ecolia_profil_'+currentUser.id);if(saved)D.profil=JSON.parse(saved);}catch(e){}}function loadProfilOLD(){
+function loadProfil(){try{const saved=localStorage.getItem('ecolia_profil_'+currentUser.id);if(saved)D.profil=JSON.parse(saved);}catch(e){}}function loadProfilOLD(){
   try{
     const saved = localStorage.getItem('ecolia_profil_'+currentUser.id);
     if(saved) D.profil = JSON.parse(saved);
@@ -3108,9 +3122,7 @@ function pageFactureForm(doc, type){
       <div style="background:white;border:0.5px solid var(--gray-border);border-radius:var(--radius-lg);padding:1.5rem;font-family:-apple-system,sans-serif;font-size:12px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;padding-bottom:1rem;border-bottom:2px solid ${couleur}">
           <div>
-            ${p.logo?`<img src="${p.logo}" style="height:40px;max-width:120px;object-fit:contain;margin-bottom:6px"><br>`:''}
             <div style="font-weight:700;color:${couleur}">${p.nom_entreprise||'Mon Entreprise'}</div>
-            ${p.siret?`<div style="color:#666;font-size:11px">SIRET ${p.siret}</div>`:''}
           </div>
           <div style="text-align:right">
             <div style="font-size:16px;font-weight:700;color:${couleur};text-transform:uppercase">${fd.type==='devis'?'DEVIS':'FACTURE'}</div>
@@ -3255,12 +3267,7 @@ function pageFacturePreview(id){
   <div id="doc-preview" style="background:white;border:0.5px solid var(--gray-border);border-radius:var(--radius-lg);padding:2.5rem;max-width:800px;margin:0 auto;font-family:-apple-system,sans-serif">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:3px solid ${couleur}">
       <div>
-        ${p.logo?`<img src="${p.logo}" style="height:60px;max-width:180px;object-fit:contain;margin-bottom:8px"><br>`:''}
         <div style="font-size:20px;font-weight:700;color:${couleur}">${p.nom_entreprise||'Mon Entreprise'}</div>
-        ${p.adresse?`<div style="font-size:12px;color:#666;margin-top:4px">${p.adresse}</div>`:''}
-        ${p.telephone?`<div style="font-size:12px;color:#666">${p.telephone}</div>`:''}
-        ${p.email_pro?`<div style="font-size:12px;color:#666">${p.email_pro}</div>`:''}
-        ${p.siret?`<div style="font-size:12px;color:#666;margin-top:4px">SIRET : ${p.siret}</div>`:''}
       </div>
       <div style="text-align:right">
         <div style="font-size:28px;font-weight:700;color:${couleur};text-transform:uppercase">${doc.type==='devis'?'DEVIS':'FACTURE'}</div>
@@ -3309,46 +3316,17 @@ function pageFacturePreview(id){
         </div>
       </div>
     </div>
-    ${p.iban?`<div style="padding:1rem;background:#f8f8f8;border-radius:8px;margin-bottom:1.5rem"><div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#999;margin-bottom:6px">Informations de paiement</div><div style="font-size:13px">IBAN : <strong>${p.iban}</strong></div></div>`:''}
     ${doc.notes?`<div style="font-size:12px;color:#666;font-style:italic;margin-bottom:1rem">${doc.notes}</div>`:''}
-    <div style="text-align:center;font-size:11px;color:#aaa;padding-top:1rem;border-top:1px solid #eee">${p.nom_entreprise||'Mon Entreprise'}${p.siret?' — SIRET : '+p.siret:''} — Merci de votre confiance</div>
+    <div style="text-align:center;font-size:11px;color:#aaa;padding-top:1rem;border-top:1px solid #eee">${p.nom_entreprise||'Mon Entreprise'} — Merci de votre confiance</div>
   </div>`;
 }
 
 function pageProfil(){
   const p = D.profil;
   return`<div class="topbar"><div class="page-title">Mon profil entreprise</div><button class="btn primary" onclick="saveProfil()">💾 Sauvegarder</button></div>
-  <div class="two-col">
-    <div class="card"><div class="card-head"><span class="card-title">Informations entreprise</span></div>
-      <div style="padding:1rem">
-        <div class="field"><label>Nom de l'entreprise</label><input id="p-nom" value="${p.nom_entreprise||''}" placeholder="ex: Detailing Pro Normandie"></div>
-        <div class="field"><label>SIRET</label><input id="p-siret" value="${p.siret||''}" placeholder="ex: 123 456 789 00012"></div>
-        <div class="field"><label>Adresse</label><textarea id="p-adresse" placeholder="Adresse complète">${p.adresse||''}</textarea></div>
-        <div class="form-grid2">
-          <div class="field"><label>Téléphone</label><input id="p-tel" value="${p.telephone||''}" placeholder="06 12 34 56 78"></div>
-          <div class="field"><label>Email professionnel</label><input id="p-email" value="${p.email_pro||''}" placeholder="contact@monentreprise.fr"></div>
-        </div>
-        <div class="field"><label>IBAN (pour les factures)</label><input id="p-iban" value="${p.iban||''}" placeholder="FR76 3000 1234 5678 9012 3456 789"></div>
-      </div>
-    </div>
-    <div class="card"><div class="card-head"><span class="card-title">Personnalisation</span></div>
-      <div style="padding:1rem">
-        <div class="field"><label>Couleur principale</label>
-          <div style="display:flex;align-items:center;gap:10px">
-            <input type="color" id="p-couleur" value="${p.couleur||'#0071E3'}" style="width:50px;height:36px;padding:2px;border-radius:6px;cursor:pointer">
-          </div>
-        </div>
-        <div class="field"><label>Logo</label>
-          <div id="logo-drop" onclick="document.getElementById('logo-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--blue)'" ondragleave="this.style.borderColor='var(--gray-border-mid)'" ondrop="handleLogoDrop(event)" style="border:2px dashed var(--gray-border-mid);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s">
-            ${p.logo
-              ? `<img src="${p.logo}" style="height:60px;max-width:400px;object-fit:contain;margin-bottom:8px"><br><span style="font-size:12px;color:var(--text-secondary)">Clique ou glisse pour changer</span>`
-              : `<div style="font-size:24px;margin-bottom:8px">🖼️</div><div style="font-size:13px;font-weight:500;color:var(--blue)">Clique ou glisse ton logo ici</div><div style="font-size:11px;color:var(--text-secondary);margin-top:4px">PNG, JPG, SVG — max 2MB</div>`
-            }
-          </div>
-          <input type="file" id="logo-input" accept="image/*" style="display:none" onchange="handleLogoFile(this.files[0])">
-          ${p.logo?`<button onclick="D.profil.logo=null;saveProfil()" style="margin-top:6px;background:none;border:none;color:var(--red-mid);font-size:12px;cursor:pointer">✕ Supprimer le logo</button>`:''}
-        </div>
-      </div>
+  <div class="card"><div class="card-head"><span class="card-title">Informations entreprise</span></div>
+    <div style="padding:1rem">
+      <div class="field"><label>Nom de l'entreprise</label><input id="p-nom" value="${p.nom_entreprise||''}" placeholder="ex: Detailing Pro Normandie"></div>
     </div>
   </div>
   <div class="card"><div class="card-head"><span class="card-title">Mes prestations types</span><button class="btn sm" onclick="openModal('prestation')">+ Ajouter</button></div>
@@ -3363,34 +3341,8 @@ function pageProfil(){
   </div>`;
 }
 
-function handleLogoFile(file){
-  if(!file) return;
-  if(file.size > 2*1024*1024){ alert('Image trop lourde (max 2MB)'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    D.profil.logo = e.target.result;
-    try{ localStorage.setItem('ecolia_profil_'+currentUser.id, JSON.stringify(D.profil)); }catch(err){}
-    renderPage();
-  };
-  reader.readAsDataURL(file);
-}
-
-function handleLogoDrop(event){
-  event.preventDefault();
-  document.getElementById('logo-drop').style.borderColor='var(--gray-border-mid)';
-  const file = event.dataTransfer.files[0];
-  if(file && file.type.startsWith('image/')) handleLogoFile(file);
-}
-
 function saveProfil(){
   D.profil.nom_entreprise = document.getElementById('p-nom')?.value||'';
-  D.profil.siret = document.getElementById('p-siret')?.value||'';
-  D.profil.adresse = document.getElementById('p-adresse')?.value||'';
-  D.profil.telephone = document.getElementById('p-tel')?.value||'';
-  D.profil.email_pro = document.getElementById('p-email')?.value||'';
-  D.profil.iban = document.getElementById('p-iban')?.value||'';
-  D.profil.couleur = document.getElementById('p-couleur')?.value||'#0071E3';
-  // logo handled by handleLogoFile
   try{ localStorage.setItem('ecolia_profil_'+currentUser.id, JSON.stringify(D.profil)); }catch(e){}
   alert('Profil sauvegarde !');
   render();
@@ -3434,19 +3386,24 @@ function markPaid(id){const doc=D.factures.find(f=>f.id===id);if(!doc)return;doc
 
 function editDoc(id){ S.editDocId=id; S.previewDocId=null; S.formDoc=null; render(); }
 
-function savePrestation(){if(!S.form.nom?.trim()){alert('Nom requis.');return;}if(S.form.editPrestId){const idx=D.prestations.findIndex(p=>p.id===S.form.editPrestId);if(idx>=0)D.prestations[idx]={...D.prestations[idx],nom:S.form.nom.trim(),description:S.form.description||'',prix:parseFloat(S.form.prix)||0};}else{const newId=Math.max(0,...D.prestations.map(p=>p.id))+1;D.prestations.push({id:newId,nom:S.form.nom.trim(),description:S.form.description||'',prix:parseFloat(S.form.prix)||0});}try{localStorage.setItem('ecolia_prestations_'+currentUser.id,JSON.stringify(D.prestations));}catch(e){}closeModal();render();return;
+async function savePrestation(){
   if(!S.form.nom?.trim()){ alert('Nom requis.'); return; }
+  const fields = {nom:S.form.nom.trim(), description:S.form.description||'', prix:parseFloat(S.form.prix)||0};
   if(S.form.editPrestId){
+    const{error}=await sb.from('prestations').update(fields).eq('id',S.form.editPrestId);
+    if(error){alert('Erreur: '+error.message);return;}
     const idx = D.prestations.findIndex(p=>p.id===S.form.editPrestId);
-    if(idx>=0) D.prestations[idx]={...D.prestations[idx],nom:S.form.nom.trim(),description:S.form.description||'',prix:parseFloat(S.form.prix)||0};
+    if(idx>=0) D.prestations[idx]={...D.prestations[idx],...fields};
   } else {
-    const newId = Math.max(0,...D.prestations.map(p=>p.id))+1;
-    D.prestations.push({id:newId, nom:S.form.nom.trim(), description:S.form.description||'', prix:parseFloat(S.form.prix)||0});
+    const row={user_id:currentUser.id,...fields};
+    const{data,error}=await sb.from('prestations').insert(row).select().single();
+    if(error){alert('Erreur: '+error.message);return;}
+    if(data) D.prestations.push(data);
   }
   closeModal(); render();
 }
 
-function delPrestation(id){if(!confirm('Supprimer ?'))return;D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);try{localStorage.setItem('ecolia_prestations_'+currentUser.id,JSON.stringify(D.prestations));}catch(e){}render();} function editPrestation(id){
+async function delPrestation(id){if(!confirm('Supprimer ?'))return;await sb.from('prestations').delete().eq('id',id);D.prestations=D.prestations.filter(p=>p.id!==id&&p.id!=id);render();} function editPrestation(id){
   const p = D.prestations.find(x=>x.id===id||x.id==id);
   if(!p) return;
   S.form = {editPrestId:p.id, nom:p.nom, description:p.description||'', prix:p.prix||0};
