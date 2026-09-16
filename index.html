@@ -662,6 +662,13 @@ const STATUTS=[
   {v:'new',l:'🆕 Nouveau lead',color:'#666',bg:'#f5f5f5'},
 ];
 function getStatutStyle(v){ return STATUTS.find(s=>s.v===v)||STATUTS[4]; }
+const SOURCES=[
+  {v:'meta_ads',l:'📱 Meta Ads (Facebook/Instagram)'},
+  {v:'google',l:'🔍 Google'},
+  {v:'bouche_a_oreille',l:'💬 Bouche-à-oreille / Recommandation'},
+  {v:'autre',l:'❓ Autre'},
+];
+function getSourceLabel(v){ return (SOURCES.find(s=>s.v===v)||SOURCES[3]).l; }
 function pStLead(v){ const s=getStatutStyle(v); return `<span style="padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:${s.bg};color:${s.color}">${s.l}</span>`; }
 
 // ═══════════════════════════════════
@@ -1920,7 +1927,9 @@ function editClient(id){
     status: c.status||'new',
     email: c.email||'', adresse_postale: c.adresse_postale||'',
     type_client: c.type_client||'particulier',
-    notes: c.notes||''
+    notes: c.notes||'',
+    source: c.source||'autre',
+    campagne: c.campagne||'', ensemble: c.ensemble||'', creation: c.creation||''
   };
   const mp = {event:mEvent,client:mClient,depense:mDep,kpi:mKpi,newdoc:mNewDoc,prestation:mPrestation};
   $('modal-content').innerHTML = mClient();
@@ -2120,7 +2129,7 @@ async function saveIntervention(){
       user_id:currentUser.id,
       name:S.form.newClientName.trim(),
       phone:S.form.newClientPhone||'',
-      ca:0, status:'new', type_client:'particulier'
+      ca:0, status:'new', type_client:'particulier', source:'autre'
     }).select().single();
     if(error){alert('Erreur création client: '+error.message);return;}
     if(data){ D.clients.push(data); clientId=data.id; clientName=data.name; }
@@ -2629,7 +2638,14 @@ function mClient(){
     </select></div>
   </div>
   <div class="field"><label>Adresse postale</label><input value="${S.form.adresse_postale||''}" oninput="S.form.adresse_postale=this.value" placeholder="ex: 12 rue des Lilas, 76000 Rouen"></div>
-  <div class="field"><label>Statut du lead</label><select onchange="S.form.status=this.value" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)">${STATUTS.map(s=>`<option value="${s.v}"${(S.form.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}</select></div>
+  <div class="form-grid2">
+    <div class="field"><label>Statut du lead</label><select onchange="S.form.status=this.value" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)">${STATUTS.map(s=>`<option value="${s.v}"${(S.form.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}</select></div>
+    <div class="field"><label>Source du prospect *</label><select onchange="S.form.source=this.value" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)">${SOURCES.map(s=>`<option value="${s.v}"${(S.form.source||'autre')===s.v?' selected':''}>${s.l}</option>`).join('')}</select></div>
+  </div>
+  ${S.form.source==='meta_ads'&&(S.form.campagne||S.form.ensemble||S.form.creation)?`<div class="field" style="background:var(--bg-secondary,#f5f5f5);padding:10px 12px;border-radius:var(--radius-md);font-size:12px;color:#666">
+    <strong>Origine publicitaire (auto — non modifiable) :</strong><br>
+    ${S.form.campagne?`Campagne : ${S.form.campagne}<br>`:''}${S.form.ensemble?`Ensemble : ${S.form.ensemble}<br>`:''}${S.form.creation?`Créa : ${S.form.creation}`:''}
+  </div>`:''}
   <div class="field"><label>Informations supplémentaires</label><textarea oninput="S.form.notes=this.value" placeholder="Préférences, notes, allergies, véhicules habituels...">${S.form.notes||''}</textarea></div>
   <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveClient()">Enregistrer</button></div>`;
 }
@@ -2658,7 +2674,7 @@ function mPrestation(){
 
 function openModal(t){
   S.modal=t;
-  S.form={type:'nettoyage',categorie:CAT_DEP[0],moyen:MOYENS[0],status:'new',statut:'confirme',prenom:'',nom:'',adresse:'',prix:'',telephone:'',notes:'',docType:'facture',lignes:[{nom:'',description:'',quantite:1,prix:0}],tva:0,date:new Date().toISOString().slice(0,10)};
+  S.form={type:'nettoyage',categorie:CAT_DEP[0],moyen:MOYENS[0],status:'new',source:'autre',statut:'confirme',prenom:'',nom:'',adresse:'',prix:'',telephone:'',notes:'',docType:'facture',lignes:[{nom:'',description:'',quantite:1,prix:0}],tva:0,date:new Date().toISOString().slice(0,10)};
   const mp={event:mEvent,client:mClient,depense:mDep,kpi:mKpi,newdoc:mNewDoc,prestation:mPrestation,intervention:mIntervention,task:mTask};
   $('modal-content').innerHTML=(mp[t]||mEvent)();
   $('modal-overlay').classList.add('open');
@@ -2699,6 +2715,7 @@ async function saveClient(){
     adresse_postale:S.form.adresse_postale||'',
     type_client:S.form.type_client||'particulier',
     status:S.form.status||'new',
+    source:S.form.source||'autre',
     notes:S.form.notes||''
   };
   if(S.form.editId){
