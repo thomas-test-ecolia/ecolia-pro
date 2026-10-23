@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prendre rendez-vous</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#F5F6F8;--card:#fff;--text:#14181F;--muted:#5F6B7A;--line:#E3E7EC;--accent:#0A66E0;--accent-soft:#E8F1FD;--ok:#1B7F46;--ok-soft:#E7F6EE;--err:#B3261E;--err-soft:#FDECEA;--dis:#EEF0F3}
+@media (prefers-color-scheme:dark){:root{--bg:#0F1319;--card:#171C24;--text:#EEF1F5;--muted:#9AA6B5;--line:#2A323E;--accent:#5AA2FF;--accent-soft:#16293F;--ok:#4CC38A;--ok-soft:#12291F;--err:#FF8A80;--err-soft:#3A1A18;--dis:#1E2530}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:env(safe-area-inset-top) 16px calc(28px + env(safe-area-inset-bottom))}
+.wrap{max-width:860px;margin:0 auto;padding-top:22px}
+h1{font-size:25px;line-height:1.2;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:14.5px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;flex:0 0 24px}
+.cols{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:760px){.cols{grid-template-columns:1.15fr .85fr;align-items:start}.cols .card{margin-bottom:0}}
+/* calendrier du mois */
+.mhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.mhead b{font-size:16px;text-transform:capitalize}
+.mnav{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-size:20px;cursor:pointer}
+.mnav:disabled{opacity:.35;cursor:default}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow span{text-align:center;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;padding:4px 0}
+.cd{aspect-ratio:1/1;min-height:42px;border:0;border-radius:50%;background:transparent;color:var(--muted);font:inherit;font-size:15px;display:flex;align-items:center;justify-content:center;position:relative;cursor:default}
+.cd.free{background:var(--accent-soft);color:var(--accent);font-weight:700;cursor:pointer}
+.cd.free:hover{filter:brightness(.97)}
+.cd.full{color:var(--muted);opacity:.55;text-decoration:line-through;cursor:not-allowed}
+.cd.closed{opacity:.35}
+.cd.sel{background:var(--accent);color:#fff}
+.cd.today:after{content:'';position:absolute;bottom:5px;width:4px;height:4px;border-radius:50%;background:currentColor}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+/* créneaux */
+.slots{display:grid;grid-template-columns:1fr;gap:8px}
+.slot{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:12px 14px;font:inherit;font-weight:600;cursor:pointer;min-height:50px;text-align:left}
+.slot small{font-weight:500;color:var(--ok);font-size:12.5px}
+.slot.sel{border-color:var(--accent);background:var(--accent);color:#fff}
+.slot.sel small{color:#fff}
+.slot:disabled{background:var(--dis);color:var(--muted);cursor:not-allowed;border-style:dashed}
+.slot:disabled b{text-decoration:line-through;font-weight:500}
+.slot:disabled small{color:var(--muted)}
+label{display:block;font-size:13.5px;font-weight:600;margin:12px 0 5px}
+label small{font-weight:400;color:var(--muted)}
+input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--text);background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 13px;min-height:48px}
+textarea{min-height:76px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fgrid{display:grid;grid-template-columns:1fr;gap:0 14px}
+@media(min-width:620px){.fgrid{grid-template-columns:1fr 1fr}.fgrid .wide{grid-column:1/-1}}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.yn label{margin:0;border:1.5px solid var(--line);border-radius:12px;padding:13px;font-weight:600;cursor:pointer;display:flex;gap:9px;align-items:center;min-height:50px}
+.yn input{width:20px;height:20px;min-height:0;accent-color:var(--accent)}
+.yn label.on{border-color:var(--accent);background:var(--accent-soft)}
+.btn{display:block;width:100%;margin-top:16px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:17px;padding:15px;cursor:pointer;min-height:52px}
+.btn:disabled{opacity:.55;cursor:default}
+.note{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+.err{background:var(--err-soft);color:var(--err);border-radius:12px;padding:11px 13px;font-size:14px;margin-top:12px}
+.ok{text-align:center;padding:26px 16px;max-width:560px;margin:0 auto}
+.ok .tick{width:64px;height:64px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:inline-flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:10px}
+.recap{background:var(--bg);border-radius:12px;padding:12px 14px;margin:14px 0;text-align:left;font-size:15px}
+.link{background:none;border:0;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;padding:10px;text-decoration:underline}
+.empty{color:var(--muted);text-align:center;padding:14px 6px;font-size:14.5px}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="sub">Chargement…</p></div>
+<script>
+const API='https://wujtrhujnfpuetonlrre.supabase.co/rest/v1/rpc/';
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1anRyaHVqbmZwdWV0b25scnJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0Njg3ODAsImV4cCI6MjA5MDA0NDc4MH0.Ye2AdC7mcSijkxFpVm0lVqbHbLh7RH5QODNUNMxag9w';
+const slug=(new URLSearchParams(location.search).get('c')||'').toLowerCase();
+const $=id=>document.getElementById(id);
+const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+const rpc=async(fn,body)=>{ const r=await fetch(API+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:KEY,Authorization:'Bearer '+KEY},body:JSON.stringify(body)}); if(!r.ok) throw new Error('http '+r.status); return r.json(); };
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const fmtH=h=>{ const [a,b]=h.split(':'); return a.replace(/^0/,'')+'h'+(b==='00'?'':b); };
+const longDay=ymd=>{ const [y,m,d]=ymd.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); };
+let info=null, byDay={}, selDay=null, selSlot=null, vy=0, vm=0, elec=null, rangeEnd=null;
+
+async function load(){
+  const today=new Date(), to=new Date(today.getTime()+(info.max_days||30)*86400000); rangeEnd=iso(to);
+  let list=[]; try{ list=await rpc('booking_calendar',{p_slug:slug,p_from:iso(today),p_to:iso(to)}); }catch(e){}
+  byDay={}; list.forEach(x=>{ (byDay[x.d]=byDay[x.d]||[]).push(x); });
+}
+const dayState=d=>{ const s=byDay[d]; if(!s||!s.length) return 'closed'; return s.some(x=>x.free)?'free':'full'; };
+async function init(){
+  if(!slug){ show('<h1>Lien incomplet</h1><p class="sub">Ce lien de réservation est incomplet. Demande-le à nouveau à ton prestataire.</p>'); return; }
+  try{ info=await rpc('booking_public_info',{p_slug:slug}); }catch(e){ show('<h1>Service indisponible</h1><p class="sub">Impossible de charger la page pour le moment. Réessaie dans quelques minutes.</p>'); return; }
+  if(!info||!info.enabled){ show('<h1>Réservation indisponible</h1><p class="sub">Cette page de réservation n\'est pas active. Contacte directement ton prestataire.</p>'); return; }
+  document.title='Prendre rendez-vous – '+info.title;
+  await load();
+  const first=Object.keys(byDay).sort().find(d=>dayState(d)==='free');
+  const t=new Date(); vy=t.getFullYear(); vm=t.getMonth();
+  if(first){ selDay=first; const [y,m]=first.split('-').map(Number); vy=y; vm=m-1; }
+  render();
+}
+function show(h){ $('app').innerHTML=h; }
+function monthHtml(){
+  const todayS=iso(new Date()), first=new Date(vy,vm,1), n=new Date(vy,vm+1,0).getDate(), lead=(first.getDay()+6)%7;
+  const label=first.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  const minM=new Date().getFullYear()*12+new Date().getMonth(), maxD=new Date(rangeEnd+'T12:00:00'), maxM=maxD.getFullYear()*12+maxD.getMonth(), cur=vy*12+vm;
+  let cells=''; for(let i=0;i<lead;i++) cells+='<span></span>';
+  for(let d=1;d<=n;d++){
+    const ymd=vy+'-'+String(vm+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'), st=dayState(ymd);
+    cells+=`<button type="button" class="cd ${st}${selDay===ymd?' sel':''}${ymd===todayS?' today':''}" ${st==='free'?`data-d="${ymd}"`:'disabled'} ${st==='full'?'title="Complet"':''} aria-label="${d}">${d}</button>`;
+  }
+  return `<div class="mhead"><button type="button" class="mnav" id="pm" ${cur<=minM?'disabled':''} aria-label="Mois précédent">‹</button><b>${label}</b><button type="button" class="mnav" id="nm" ${cur>=maxM?'disabled':''} aria-label="Mois suivant">›</button></div>
+    <div class="dow"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="grid">${cells}</div>
+    <div class="legend"><span><i style="background:var(--accent-soft);border:1px solid var(--accent)"></i>Disponible</span><span><i style="background:var(--dis)"></i>Complet / fermé</span></div>`;
+}
+function slotsHtml(){
+  if(!selDay) return '<div class="empty">Choisis un jour disponible dans le calendrier.</div>';
+  const list=byDay[selDay]||[], nb=list.filter(x=>x.free).length;
+  return `<div style="font-weight:600;text-transform:capitalize;margin-bottom:2px">${esc(longDay(selDay))}</div><div class="note" style="margin:0 0 10px">${nb} créneau${nb>1?'x':''} disponible${nb>1?'s':''} sur ${list.length}</div>
+    <div class="slots">${list.map(s=>s.free?`<button type="button" class="slot${selSlot===s.s?' sel':''}" data-s="${s.s}"><b>${fmtH(s.s)} – ${fmtH(s.e)}</b><small>Disponible</small></button>`:`<button type="button" class="slot" disabled><b>${fmtH(s.s)} – ${fmtH(s.e)}</b><small>Complet</small></button>`).join('')}</div>
+    <p class="note">Le prestataire arrive dans le créneau choisi et te prévient avant de venir.</p>`;
+}
+function render(){
+  const presta=(info.prestations||[]), any=Object.keys(byDay).some(d=>dayState(d)==='free');
+  let h=`<h1>${esc(info.title)}</h1><p class="sub">${esc(info.zone||'Choisis le jour et le créneau qui te conviennent.')}</p>`;
+  if(!any){ h+=`<div class="card"><div class="empty">Aucun créneau n'est disponible pour le moment.<br>Contacte directement ton prestataire.</div></div>`; show(h); return; }
+  h+=`<div class="cols"><div class="card"><h2><span class="num">1</span> Choisis un jour</h2>${monthHtml()}</div><div class="card"><h2><span class="num">2</span> Choisis un créneau</h2><div id="sl">${slotsHtml()}</div></div></div>`;
+  if(selDay&&selSlot){
+    h+=`<form class="card" id="f" novalidate style="margin-top:14px"><h2><span class="num">3</span> Tes informations</h2>
+      <div class="fgrid">
+      <div><label for="n">Nom et prénom</label><input id="n" autocomplete="name" required></div>
+      <div><label for="t">Téléphone portable</label><input id="t" type="tel" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" required></div>
+      <div><label for="e">E-mail <small>(facultatif)</small></label><input id="e" type="email" inputmode="email" autocomplete="email"></div>
+      <div><label for="p">Prestation souhaitée</label><select id="p"><option value="">— Choisir —</option>${presta.map(x=>`<option value="${esc(x.nom)}">${esc(x.nom)}${x.prix?' — '+x.prix+' €':''}</option>`).join('')}<option value="Autre / à définir">Autre / à définir ensemble</option></select></div>
+      <div><label for="v">Véhicule <small>(marque, modèle)</small></label><input id="v" placeholder="ex : Peugeot 308"></div>
+      <div><label for="a">Adresse de l'intervention</label><input id="a" autocomplete="street-address" placeholder="12 rue des Lilas, 76000 Rouen" required></div>
+      <div class="wide"><label>⚡ Y a-t-il une prise électrique accessible près du véhicule ?</label>
+        <div class="yn"><label id="yl1" class="${elec==='oui'?'on':''}"><input type="radio" name="el" value="oui" ${elec==='oui'?'checked':''}> Oui</label><label id="yl2" class="${elec==='non'?'on':''}"><input type="radio" name="el" value="non" ${elec==='non'?'checked':''}> Non</label></div>
+        <p class="note" style="margin-top:6px">Si non, pas de souci : le prestataire s'adapte et te le confirme.</p></div>
+      <div class="wide"><label for="o">Précisions <small>(facultatif)</small></label><textarea id="o" placeholder="Code du portail, étage, animaux…"></textarea></div>
+      </div>
+      <input class="hp" id="w" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="err" id="er" hidden></div>
+      <button class="btn" id="go" type="submit">Confirmer mon rendez-vous</button>
+      <p class="note">En confirmant, tu acceptes d'être recontacté (appel ou SMS) pour ce rendez-vous. Tes informations ne sont utilisées que pour cette prestation.</p></form>`;
+  }
+  show(h);
+  document.querySelectorAll('.cd[data-d]').forEach(b=>b.onclick=()=>{ selDay=b.dataset.d; selSlot=null; render(); const s=$('sl'); s&&window.matchMedia('(max-width:759px)').matches&&s.scrollIntoView({behavior:'smooth',block:'center'}); });
+  document.querySelectorAll('.slot[data-s]').forEach(b=>b.onclick=()=>{ selSlot=b.dataset.s; render(); const f=$('f'); f&&f.scrollIntoView({behavior:'smooth',block:'start'}); });
+  const pm=$('pm'), nm=$('nm'); if(pm) pm.onclick=()=>{ vm--; if(vm<0){vm=11;vy--;} render(); }; if(nm) nm.onclick=()=>{ vm++; if(vm>11){vm=0;vy++;} render(); };
+  document.querySelectorAll('input[name=el]').forEach(r=>r.onchange=()=>{ elec=r.value; $('yl1').classList.toggle('on',elec==='oui'); $('yl2').classList.toggle('on',elec==='non'); });
+  const f=$('f'); if(f) f.onsubmit=submit;
+}
+const REASONS={creneau_pris:"Ce créneau vient d'être réservé par quelqu'un d'autre. Choisis-en un autre.",telephone_invalide:"Le numéro de téléphone n'est pas valide (portable, 10 chiffres).",nom_invalide:"Indique ton nom et ton prénom.",adresse_invalide:"Indique l'adresse complète de l'intervention.",trop_de_demandes:"Trop de demandes en peu de temps. Réessaie un peu plus tard ou appelle directement.",indisponible:"La réservation n'est plus disponible."};
+async function submit(ev){
+  ev.preventDefault(); const er=$('er'); er.hidden=true; const go=$('go');
+  const v=id=>$(id).value.trim();
+  if(!v('n')||!v('t')||!v('a')){ er.textContent='Remplis ton nom, ton téléphone et l\'adresse.'; er.hidden=false; return; }
+  if(!elec){ er.textContent='Indique s\'il y a une prise électrique à proximité (oui ou non).'; er.hidden=false; return; }
+  go.disabled=true; go.textContent='Envoi…';
+  try{
+    const r=await rpc('booking_create',{p_slug:slug,p_date:selDay,p_start:selSlot,p_name:v('n'),p_phone:v('t'),p_email:v('e')||null,p_prestation:v('p')||null,p_vehicle:v('v')||null,p_address:v('a'),p_notes:v('o')||null,p_website:v('w')||null,p_electricity:elec});
+    if(!r||!r.ok){ er.textContent=REASONS[r&&r.reason]||'La réservation n\'a pas pu être enregistrée. Réessaie.'; er.hidden=false; go.disabled=false; go.textContent='Confirmer mon rendez-vous';
+      if(r&&r.reason==='creneau_pris'){ selSlot=null; await load(); if(dayState(selDay)!=='free') selDay=null; render(); } return; }
+    done(r);
+  }catch(e){ er.textContent='Problème de connexion. Réessaie dans un instant.'; er.hidden=false; go.disabled=false; go.textContent='Confirmer mon rendez-vous'; }
+}
+function done(r){
+  show(`<div class="card ok"><div class="tick">✓</div><h1>C'est confirmé !</h1><div class="recap"><b style="text-transform:capitalize">${esc(longDay(r.date))}</b><br>Entre ${fmtH(r.start)} et ${fmtH(r.end)}<br><span style="color:var(--muted)">${esc(r.title)}</span></div>
+  <p class="sub">${esc(r.message||'Tu recevras un SMS de rappel avant le rendez-vous. Le prestataire te prévient avant d\'arriver.')}</p>
+  <button class="link" id="ics" type="button">Ajouter à mon calendrier</button></div>`);
+  $('ics').onclick=()=>{ const p=(ymd,h)=>ymd.replace(/-/g,'')+'T'+h.replace(':','')+'00'; const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Rendez-vous//FR','BEGIN:VEVENT','UID:'+Date.now()+'@rdv','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z','DTSTART;TZID=Europe/Paris:'+p(r.date,r.start),'DTEND;TZID=Europe/Paris:'+p(r.date,r.end),'SUMMARY:Rendez-vous '+(r.title||''),'END:VEVENT','END:VCALENDAR'].join('\r\n'); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'})); a.download='rendez-vous.ics'; a.click(); };
+}
+init();
+</script>
+</body>
+</html>
