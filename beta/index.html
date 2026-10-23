@@ -3739,7 +3739,7 @@ function kpiLegacyHtml(){
 ICONS.sms=`<svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7.3c0 2.4-2.7 4.4-6 4.4-.7 0-1.3-.1-1.9-.2L3 12.8l.8-2.3C2.7 9.7 2 8.6 2 7.3 2 4.9 4.7 3 8 3s6 1.9 6 4.3z"/></svg>`;
 // (les textes par défaut doivent rester identiques à ceux du moteur : supabase/functions/sms-engine/index.ts)
 const SMX_KINDS=[
-  {k:'lead_confirm',grp:'Nouveau prospect',title:'Confirmation de la demande',when:'Tout de suite après le formulaire',vars:['prenom','entreprise'],def:'Bonjour {prenom}, merci pour votre demande ! {entreprise} vous recontacte très vite.'},
+  {k:'lead_confirm',grp:'Nouveau prospect',title:'Confirmation de la demande',when:'Tout de suite après le formulaire',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, merci pour votre demande ! Réservez votre créneau : {lien_rdv} - {entreprise}'},
   {k:'lead_6h',grp:'Nouveau prospect',title:'Lien pour prendre rendez-vous',when:'6 h après le formulaire (si pas de RDV)',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, réservez votre créneau en 1 minute : {lien_rdv} - {entreprise}'},
   {k:'lead_promo',grp:'Nouveau prospect',title:'Relance avec code promo',when:'24 h après le 1er SMS (si toujours pas de RDV)',vars:['prenom','entreprise','lien_rdv','code_promo'],def:'{prenom}, -10% sur votre 1ère prestation avec le code {code_promo} ! Réservez : {lien_rdv} - {entreprise}'},
   {k:'reminder_72h',grp:'Rendez-vous',title:'Rappel 3 jours avant',when:'72 h avant le rendez-vous',vars:['prenom','entreprise','date','heure','adresse'],def:'Rappel : votre rendez-vous avec {entreprise} est prévu {date} à {heure}. À bientôt !'},
