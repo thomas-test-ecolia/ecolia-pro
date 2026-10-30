@@ -545,6 +545,9 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
   .lead-tbl .lead-mail{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .lead-tbl .st-sel{min-height:38px;max-width:150px}
 }
+#view-only-note{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:99999;display:flex;gap:14px;align-items:center;background:#1D1D1F;color:#fff;border-radius:100px;padding:9px 18px;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,.3);max-width:calc(100vw - 24px)}
+#view-only-note a{color:#9CCBFF;text-decoration:none;font-weight:600;white-space:nowrap}
+#view-only-note.flash{background:#B3261E}
 </style>
 </head>
 <body>
@@ -1529,6 +1532,7 @@ function renderAdmin(){
                       <td style="padding:12px 16px">${adminSmsCell(p.id)}</td>
                       <td style="padding:12px 16px;text-align:center">
                         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                          <button onclick="window.open(location.pathname+'?voir=${p.id}','_blank')" title="Ouvre son CRM en lecture seule" style="background:#EDF4FE;color:#0062C4;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">👁 Voir</button>
                           ${isSusp
                             ? `<button onclick="toggleAccess('${p.id}','actif','')" style="background:#e8f5e9;color:#2d7a2d;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">✅ Réactiver</button>`
                             : `<button onclick="promptSuspend('${p.id}')" style="background:#fde8e8;color:#c0392b;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">🔒 Suspendre</button>`
@@ -1935,6 +1939,69 @@ async function doRegister(){
 
 const ADMIN_EMAIL = 'contact.ecolia76@gmail.com';
 
+// ═══════════════════════════════════
+// MODE « VOIR COMME » (admin, lecture seule) : on ouvre le CRM d'un élève sans son mot de passe, sans rien modifier
+// ═══════════════════════════════════
+let VIEW_ONLY=false;
+function viewBlocked(){ if(!viewBlocked._t||Date.now()-viewBlocked._t>4000){ viewBlocked._t=Date.now(); const b=document.getElementById('view-only-note'); if(b){ b.classList.add('flash'); setTimeout(()=>b.classList.remove('flash'),900); } } }
+function viewDeadChain(){
+  const res={data:null,error:{message:'Mode lecture seule : rien n\'est enregistré'}};
+  const dead=new Proxy(function(){},{ get:(t,k)=>k==='then'?(ok,ko)=>Promise.resolve(res).then(ok,ko):()=>dead, apply:()=>dead });
+  return dead;
+}
+function enableViewOnly(){
+  VIEW_ONLY=true;
+  const origFrom=sb.from.bind(sb);
+  sb.from=function(t){ const q=origFrom(t); ['insert','update','upsert','delete'].forEach(m=>{ q[m]=function(){ viewBlocked(); return viewDeadChain(); }; }); return q; };
+  sb.rpc=function(){ viewBlocked(); return viewDeadChain(); };
+  try{ sb.auth.updateUser=async function(){ viewBlocked(); return {data:null,error:{message:'Mode lecture seule'}}; }; }catch(e){}
+  try{ sb.storage.from=function(){ viewBlocked(); return viewDeadChain(); }; }catch(e){}
+  // aucun appel d'écriture vers Supabase (fonctions Google, paiement…) : seules les lectures et l'authentification passent
+  const origFetch=window.fetch.bind(window);
+  window.fetch=function(input,init){
+    try{
+      const url=String(typeof input==='string'?input:(input&&input.url)||''), method=String((init&&init.method)||(input&&input.method)||'GET').toUpperCase();
+      if(url.indexOf(SUPABASE_URL)===0 && method!=='GET' && method!=='HEAD' && url.indexOf('/auth/v1/')<0){ viewBlocked(); return Promise.resolve(new Response(JSON.stringify({error:'Mode lecture seule'}),{status:403,headers:{'Content-Type':'application/json'}})); }
+    }catch(e){}
+    return origFetch(input,init);
+  };
+  // Google Agenda : jamais connecté dans cette vue (sinon il lirait ou écrirait dans le mauvais agenda)
+  window.callGoogleTokenFunction=async function(){ return {error:'Mode lecture seule'}; };
+  window.connectGoogleCalendar=function(){ alert('Mode lecture seule : la connexion Google Agenda est désactivée dans cette vue.'); };
+  window.tryReconnectGoogleCalendar=async function(){};
+  window.autoExportToGoogle=async function(){};
+  window.syncFromGoogleCalendar=async function(){};
+}
+function viewApplyData(d){
+  D.clients=d.clients||[]; D.depenses=d.depenses||[]; D.kpis=d.kpis||[]; D.interventions=d.interventions||[]; D.tasks=d.tasks||[];
+  D.prestations=d.prestations||[]; D.options=d.options||[]; D.leadEvents=d.lead_events||[];
+  D.kpiSpend={}; (d.kpi_spend||[]).forEach(r=>{ D.kpiSpend[r.week_start]=Number(r.amount); });
+  D.kpiPanier=Number((d.kpi_settings&&d.kpi_settings.panier_moyen)||0);
+  D.booking=d.booking||null;
+  D.quizState={}; (d.quiz_state||[]).forEach(q=>{ D.quizState[q.module_id]={ans:q.answers||{},sub:q.submitted||false,dbId:q.id}; });
+  const st=d.sms_status||null;
+  S.sms={campaigns:d.sms_campaigns||[],campCounts:{},loaded:true,senderReq:d.sms_sender||null,reviewed:[],status:st,settings:d.sms_settings||{},templates:{},queue:d.sms_queue||[],tiers:[],cfg:{},qty:400};
+  (d.sms_templates||[]).forEach(t=>{ S.sms.templates[t.kind]={enabled:t.enabled,body:t.body}; });
+}
+async function startViewAs(uid){
+  showLoading('Ouverture du CRM de l\'élève...');
+  const{data,error}=await sb.rpc('admin_view_as',{p_user:uid});
+  if(error||!data){ $('root').innerHTML=`<div style="padding:2rem;font-family:-apple-system,sans-serif;max-width:520px;margin:3rem auto;line-height:1.6"><h2>Impossible d'ouvrir ce CRM</h2><p style="color:#666">${(error&&error.message)||'Aucune donnée reçue.'}</p><p style="color:#666;font-size:13px">As-tu bien lancé le fichier SQL « admin-voir-comme.sql » dans Supabase ?</p><p><a href="${location.pathname}">← Retour à l'admin</a></p></div>`; return; }
+  enableViewOnly();
+  const prof=data.profile||{};
+  currentUser={...currentUser,id:uid,email:prof.email||'',user_metadata:{}};
+  currentProfile=prof;
+  window.loadAllData=async function(){ viewApplyData(data); };
+  window.loadSms=async function(){};
+  viewApplyData(data);
+  document.title='👁 '+(((prof.prenom||'')+' '+(prof.nom||'')).trim()||'Élève')+' — lecture seule';
+  const bar=document.createElement('div');
+  bar.id='view-only-note';
+  bar.innerHTML=`<span>👁 <strong>${((prof.prenom||'')+' '+(prof.nom||'')).trim()||'Élève'}</strong> · lecture seule, rien n'est enregistré</span><a href="${location.pathname}" onclick="if(window.opener){window.close();return false;}">Quitter</a>`;
+  document.body.appendChild(bar);
+  renderApp();
+}
+
 async function loadProfileAndStart(){
   showLoading('Chargement de ton espace...');
   const {data:profile}=await sb.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
@@ -1942,6 +2009,8 @@ async function loadProfileAndStart(){
 
   // Check if admin
   if(currentUser.email === ADMIN_EMAIL){
+    const voir=new URLSearchParams(location.search).get('voir');
+    if(voir && /^[0-9a-f-]{36}$/i.test(voir)){ await startViewAs(voir); return; }
     await loadAdminData(); // renderAdmin is called inside loadAdminData
     return;
   }
