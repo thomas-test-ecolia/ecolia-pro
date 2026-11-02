@@ -4434,7 +4434,7 @@ function kpiCompute(){
   const SEED=[['Protection céramique',250],['Polish / Correction',180]]; // prestations créées d'office pour tout nouvel élève, tant qu'il ne les a pas modifiées
   const catMax=Math.max(0,...(D.prestations||[]).filter(p=>!SEED.some(x=>x[0]===p.nom&&Number(p.prix)===x[1])).map(p=>Number(p.prix)||0));
   const personalised=catalogPersonalised();
-  const panier=personalised?0:((Number(D.kpiPanier)||0)||catMax); // profil rempli => plus d'estimation : le CA vient uniquement des prestations enregistrées
+  const panier=(Number(D.kpiPanier)||0)||(personalised?0:catMax); // un panier saisi s'applique toujours ; sans panier saisi, profil rempli => pas d'estimation (le CA vient des prestations enregistrées)
   // CA d'un prospect devenu client = ses rendez-vous (réalisés OU déjà planifiés) à partir du jour où il est arrivé, même si la prestation a lieu des semaines plus tard
   const itv=(c,from)=>(D.interventions||[]).filter(i=>String(i.client_id)===String(c.id)&&(i.statut||'realise')!=='annule'&&String(i.date||'').slice(0,10)>=from);
   const realCa=(c,from)=>itv(c,from).reduce((s,i)=>s+(Number(i.montant)||0),0);
@@ -4445,7 +4445,7 @@ function kpiCompute(){
     const sp=spend[w]; const P=cl.length, C=conv.length; let est=false; const cash=conv.reduce((a,c)=>a+cashOf(c,since[String(c.id)]||w),0); const ca=conv.reduce((a,c)=>{ const r=realCa(c,since[String(c.id)]||w)+clientLegacyCa(c); if(r>0) return a+r; if(panier>0){ est=true; return a+panier; } return a; },0);
     return {w,P,C,ca,cash,est,sp,rate:P?C/P*100:0,cpl:(sp>0&&P)?sp/P:null,cac:(sp>0&&C)?sp/C:null,roas:(sp>0&&ca>0)?ca/sp:null,roasCash:(sp>0&&cash>0)?cash/sp:null,cur:w===curMon};
   });
-  return {ev,rows,curMon,catMax,estimating:!personalised};
+  return {ev,rows,curMon,catMax,estimating:!personalised,personalised,panier};
 }
 async function kpiSavePanier(val){
   const v=String(val).replace(',','.').trim(); const n=v===''?0:Math.max(0,Math.round(parseFloat(v)*100)/100);
@@ -4463,7 +4463,7 @@ async function kpiSaveSpend(week,val){
   renderPage();
 }
 function pageKpiFb(){
-  const {ev,rows,curMon,catMax,estimating}=kpiCompute();
+  const {ev,rows,curMon,catMax,estimating,personalised,panier}=kpiCompute();
   const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const top=`<div class="topbar"><div class="page-title">KPI Facebook Ads</div></div>`;
   if(!ev.length&&!rows.some(r=>r.sp)){
@@ -4488,10 +4488,10 @@ function pageKpiFb(){
     ${card('CPL · coût par prospect',(S4>0&&Pw)?kpiEur(S4/Pw):'—',(S4>0&&Pw)?'':need,'Dépenses ÷ prospects (sur les semaines où tu as saisi tes dépenses)')}
     ${card('CAC · coût d\'acquisition client',(S4>0&&Cw)?kpiEur(S4/Cw):'—',(S4>0&&Cw)?'':need,'Dépenses ÷ clients obtenus : ce que te coûte un client en publicité')}
     ${card('ROAS · retour sur dépenses',(S4>0&&CAw>0)?(est4?'≈ ':'')+f2(CAw/S4).replace('.',',')+'x':'—',(S4>0&&CAw>0)?'1 € de pub = '+f2(CAw/S4).replace('.',',')+' € de CA':(S4>0?'<span style="color:var(--amber-dark)">Il manque le CA de tes clients ↑</span>':need),'Chiffre d\'affaires des clients ÷ dépenses. Au-dessus de 1x, la pub rapporte plus qu\'elle ne coûte.')}
-    ${card('CA contracté',CA4?(est4?'≈ ':'')+kpiEur(CA4):'—',CA4?'Total depuis le début : '+(est4?'≈ ':'')+kpiEur(CAtot):(C4?(estimating?'<span style="color:var(--amber-dark)">Renseigne ton panier moyen ↓</span>':'<span style="color:var(--amber-dark)">Aucune prestation enregistrée : ajoute tes rendez-vous dans l\'agenda</span>'):''),'Montant des rendez-vous (réalisés ou planifiés) des clients venus de tes prospects')}
+    ${card('CA contracté',CA4?(est4?'≈ ':'')+kpiEur(CA4):'—',CA4?'Total depuis le début : '+(est4?'≈ ':'')+kpiEur(CAtot):(C4?'<span style="color:var(--amber-dark)">Renseigne ton panier moyen ↓</span>':''),'Montant des rendez-vous (réalisés ou planifiés) des clients venus de tes prospects')}
   </div>
-  ${estimating?`<div class="card" style="margin-bottom:1rem;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:13px;flex:1;min-width:240px"><strong>Panier moyen estimé</strong> <span style="color:var(--text-secondary)">— utilisé pour le CA et le ROAS quand tu n'as pas enregistré la prestation d'un client (« Mes rendez-vous »). ${catMax>0?`Si tu laisses vide, le CRM prend ta prestation la plus chère : <strong>${kpiEur(catMax).replace(',00','')}</strong>. <em>Cette estimation s'arrête dès que tu as mis tes propres prestations dans « Mon profil ».</em>`:'Ajoute tes prestations dans « Mon profil », ou saisis un montant (l\'estimation s\'arrête dès que ton profil est rempli).'}</span></span>
-    <span><input type="number" step="1" min="0" value="${D.kpiPanier||''}" placeholder="${catMax>0?catMax:'ex : 90'}" onchange="kpiSavePanier(this.value)" style="width:90px;padding:6px 8px;border:0.5px solid var(--gray-border-mid);border-radius:6px;font-size:13px;text-align:right"> <span style="font-size:13px">€</span></span></div>`:''}
+  ${true?`<div class="card" style="margin-bottom:1rem;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:13px;flex:1;min-width:240px"><strong>Panier moyen estimé</strong> <span style="color:var(--text-secondary)">— utilisé pour le CA et le ROAS quand tu n'as pas enregistré la prestation d'un client (« Mes rendez-vous »). ${D.kpiPanier>0?`Chaque client sans prestation enregistrée est compté à <strong>${kpiEur(D.kpiPanier).replace(',00','')}</strong> (les montants que tu enregistres restent prioritaires). Les chiffres marqués « ≈ » incluent cette estimation. Vide la case pour la désactiver.`:personalised?`Sans montant saisi, seul le CA des prestations enregistrées est compté. Si tu ne les enregistres pas toujours, saisis ton prix habituel.`:catMax>0?`Si tu laisses vide, le CRM prend ta prestation la plus chère : <strong>${kpiEur(catMax).replace(',00','')}</strong>. <em>Cette estimation s'arrête dès que tu as mis tes propres prestations dans « Mon profil ».</em>`:'Ajoute tes prestations dans « Mon profil », ou saisis un montant (l\'estimation s\'arrête dès que ton profil est rempli).'}</span></span>
+    <span><input type="number" step="1" min="0" value="${D.kpiPanier||''}" placeholder="${catMax>0?catMax:'ex : 129'}" onchange="kpiSavePanier(this.value)" style="width:90px;padding:6px 8px;border:0.5px solid var(--gray-border-mid);border-radius:6px;font-size:13px;text-align:right"> <span style="font-size:13px">€</span></span></div>`:''}
   <div style="font-size:11.5px;color:var(--text-secondary);margin:-6px 2px 1rem">${nq.size?`${nq.size} prospect(s) non qualifié(s) sur la période · `:''}Les coûts ne se calculent que sur les semaines où tu as saisi « Dépensé ».</div>`;
   // graphique : 8 dernières semaines
   const g=rows.slice(-8), mx=Math.max(1,...g.map(r=>r.P));
