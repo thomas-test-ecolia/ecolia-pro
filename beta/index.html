@@ -2154,6 +2154,7 @@ function onbMaybeStart(){
   if(known&&!((D.profil&&D.profil.nom_entreprise)||'').trim()){ D.profil=D.profil||{}; D.profil.nom_entreprise=known; try{ localStorage.setItem('ecolia_profil_'+currentUser.id,JSON.stringify(D.profil)); }catch(e){} }
   const steps=[];
   if(!known) steps.push('company');
+  if(!(D.notif&&D.notif.email)) steps.push('email');   // adresse de réception des notifications (l'e-mail de connexion n'est pas toujours valide)
   if(!catalogPersonalised()) steps.push('prest');
   if(!(D.booking&&D.booking.enabled)) steps.push('booking');
   if(!steps.length) return;
@@ -2176,6 +2177,10 @@ function onbRender(){
       ${inp('onb-name','Nom de ton entreprise',onbCompanyName(),'ex : Clean Auto 76')}
       ${inp('onb-phone','Téléphone professionnel <span style="font-weight:400;color:var(--text-secondary)">(facultatif)</span>',(D.profil&&D.profil.telephone)||'','06 12 34 56 78','tel')}
       ${inp('onb-zone','Zone où tu interviens <span style="font-weight:400;color:var(--text-secondary)">(facultatif)</span>',o.zone,'ex : Rouen et 20 km autour')}`;
+  } else if(k==='email'){
+    body=`<h2>Où veux-tu recevoir tes notifications ?</h2><p class="onb-sub">Tu recevras un e-mail à chaque nouveau prospect et à chaque réservation sur ta page. Vérifie bien l'adresse : l'e-mail de connexion n'est pas toujours valide.</p>
+      ${inp('onb-mail','Ton adresse e-mail',(D.notif&&D.notif.email)||(currentUser&&currentUser.email)||'','prenom@exemple.fr','email')}
+      <button class="btn" onclick="onbTestMail()">Envoyer un e-mail de test</button><div id="onb-mailtest" class="onb-note"></div>`;
   } else if(k==='prest'){
     body=`<h2>Tes prestations et tes prix</h2><p class="onb-sub">Garde seulement ce que tu vends vraiment : elles pré-remplissent tes rendez-vous et servent à calculer ton chiffre d'affaires. Tu pourras les modifier plus tard dans « Mon profil ».</p>
       <div class="onb-rows"><div class="onb-row onb-head"><span>Prestation</span><span>Prix (€)</span><span>Durée (min)</span><span></span></div>
@@ -2203,7 +2208,7 @@ function onbRender(){
   }
   const last=k==='done';
   const actions=last?`<button class="btn primary" onclick="onbFinish('dashboard')">Découvrir mon CRM</button>`
-    :`${k==='booking'?`<button class="btn" onclick="onbSkipBooking()">Passer</button>`:''}<button class="btn primary" onclick="onb${k==='company'?'SaveCompany':k==='prest'?'SavePrest':'SaveBooking'}()">${k==='booking'?'Activer ma page':'Continuer'}</button>`;
+    :`${k==='booking'?`<button class="btn" onclick="onbSkipBooking()">Passer</button>`:''}<button class="btn primary" onclick="onb${k==='company'?'SaveCompany':k==='email'?'SaveEmail':k==='prest'?'SavePrest':'SaveBooking'}()">${k==='booking'?'Activer ma page':'Continuer'}</button>`;
   el.innerHTML=`<div class="onb-box">${last?'':`<div class="onb-top"><span>Étape ${o.i+1} sur ${total}</span><span class="onb-link" onclick="onbLater()">Plus tard</span></div><div class="onb-bar"><div style="width:${Math.round((o.i)/total*100)}%"></div></div>`}
     ${body}<div id="onb-err" class="onb-err" style="display:${o.err?'block':'none'}">${_onbE(o.err)}</div><div class="onb-actions">${actions}</div></div>`;
 }
@@ -2223,6 +2228,20 @@ async function onbSaveCompany(){
     S.sms.settings={...s,...row};
   }
   onbNext();
+}
+async function onbPersistEmail(){
+  const v=(document.getElementById('onb-mail').value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ onbErr("Cette adresse e-mail n'est pas valide."); return null; }
+  const row={user_id:currentUser.id,email:v,new_lead:D.notif?D.notif.new_lead!==false:true,new_booking:D.notif?D.notif.new_booking!==false:true,updated_at:new Date().toISOString()};
+  const{error}=await sb.from('notif_prefs').upsert(row,{onConflict:'user_id'});
+  if(error){ onbErr('Erreur : '+error.message); return null; }
+  D.notif=row; return v;
+}
+async function onbSaveEmail(){ if(await onbPersistEmail()) onbNext(); }
+async function onbTestMail(){
+  onbErr(''); const v=await onbPersistEmail(); if(!v) return;
+  const{error}=await sb.rpc('notif_send_test'); if(error){ onbErr('Erreur : '+error.message); return; }
+  const el=document.getElementById('onb-mailtest'); if(el) el.innerHTML='✅ E-mail envoyé à <strong>'+_onbE(v)+'</strong> : il arrive dans la minute. Pense à regarder tes courriers indésirables.';
 }
 async function onbSavePrest(){
   const keep=S.onb.prest.filter(r=>!r.del&&(r.nom||'').trim());
@@ -2280,28 +2299,32 @@ function notifCardHtml(){
   const row=(id,on,label)=>`<label style="display:flex;gap:8px;align-items:center;font-size:14px;padding:5px 0;cursor:pointer"><input type="checkbox" id="${id}" ${on?'checked':''} onchange="notifSave()"> ${label}</label>`;
   return `<div class="card"><div class="card-head"><span class="card-title">Notifications par e-mail</span><span id="notif-ind" style="font-size:12px;color:var(--green-mid)"></span></div>
     <div style="padding:1rem"><div style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">Reçois un e-mail dès qu'un prospect remplit ton formulaire Facebook ou qu'un client réserve un créneau sur ta page. Pense à vérifier tes courriers indésirables la première fois.</div>
-      <div class="field"><label>Adresse de réception</label><input id="notif-email" type="email" value="${e(mail)}" placeholder="${e(login)}" onchange="notifSave()"><div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px">Laisse vide pour utiliser l'adresse de ta connexion${login?' ('+e(login)+')':''}.</div></div>
+      <div class="field"><label>Adresse de réception</label><input id="notif-email" type="email" value="${e(mail)}" placeholder="${e(login)}" onchange="notifSave()"><div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px">Laisse vide pour utiliser l'adresse de ta connexion${login?' ('+e(login)+')':''}.</div><button class="btn sm" style="margin-top:8px" onclick="notifTest()">Envoyer un e-mail de test</button></div>
       ${row('notif-lead',lead,'Nouveau prospect (formulaire Facebook)')}${row('notif-book',book,'Nouvelle réservation en ligne')}
     </div></div>`;
 }
 async function notifSave(){
   const ind=document.getElementById('notif-ind'), say=(t,c)=>{ if(ind){ ind.textContent=t; ind.style.color=c||'var(--green-mid)'; } };
   const email=(document.getElementById('notif-email').value||'').trim();
-  if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ say('⚠️ Adresse e-mail invalide','var(--red-mid)'); return; }
+  if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ say('⚠️ Adresse e-mail invalide','var(--red-mid)'); return false; }
   const row={user_id:currentUser.id,email:email||null,new_lead:document.getElementById('notif-lead').checked,new_booking:document.getElementById('notif-book').checked,updated_at:new Date().toISOString()};
   say('Enregistrement…','var(--text-secondary)');
   const{error}=await sb.from('notif_prefs').upsert(row,{onConflict:'user_id'});
-  if(error){ say('⚠️ Non enregistré : '+error.message,'var(--red-mid)'); return; }
-  D.notif=row; say('✅ Enregistré');
+  if(error){ say('⚠️ Non enregistré : '+error.message,'var(--red-mid)'); return false; }
+  D.notif=row; say('✅ Enregistré'); return true;
+}
+async function notifTest(){
+  if(!(await notifSave())) return;
+  const ind=document.getElementById('notif-ind'); const{error}=await sb.rpc('notif_send_test');
+  if(ind){ ind.textContent=error?'⚠️ '+error.message:'✅ E-mail de test envoyé : regarde ta boîte (et tes indésirables)'; ind.style.color=error?'var(--red-mid)':'var(--green-mid)'; }
 }
 
 function renderApp(){
   $('root').innerHTML=`<div class="app-layout"><nav class="sidebar" id="sidebar"></nav><main class="main" id="main"></main></div>`;
   const mn=$('mobile-nav');if(mn)mn.style.display='';
   render();
-  loadSms().then(()=>{ const sd=$('sidebar'); if(sd) sd.innerHTML=renderSidebar(); onbMaybeStart(); });
+  loadSms().then(async()=>{ const sd=$('sidebar'); if(sd) sd.innerHTML=renderSidebar(); await loadNotif(); onbMaybeStart(); });
   smxHandleReturn();
-  loadNotif();
   // Init Google API
   initGoogleAPI();
   tryReconnectGoogleCalendar();
