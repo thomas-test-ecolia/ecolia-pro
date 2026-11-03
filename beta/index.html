@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Académie — Espace élève</title>
 <meta name="description" content="Académie — Lance et développe ton business de nettoyage auto">
-<meta name="theme-color" content="#0071E3">
+<meta name="theme-color" content="#0B1B33">
+<link rel="icon" type="image/png" href="logo-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Académie">
@@ -17,7 +19,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#0071E3;--blue-light:#EDF4FE;--blue-mid:#B9DBFF;--blue-dark:#0062C4;
+  --blue:#0E6FDB;--blue-light:#EDF4FE;--blue-mid:#B9DBFF;--blue-dark:#0058B8;
   --green-light:#E9F7EE;--green-dark:#12643A;--green-mid:#1D8A4E;
   --amber-light:#FFF4E5;--amber-dark:#8A4B00;
   --red-light:#FFEFEF;--red-dark:#9B0010;--red-mid:#D70015;
@@ -33,13 +35,13 @@
 }
 body{font-family:var(--font);background:var(--gray-bg);min-height:100vh;color:var(--text-primary);font-size:14px;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-0.011em}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
-::selection{background:rgba(0,113,227,.16)}
+::selection{background:rgba(14,111,219,.16)}
 input,select,textarea,button{font-family:var(--font);letter-spacing:inherit}
 
 /* ── LOGIN ── */
 .login-page{min-height:100vh;display:flex;background:var(--bg-primary)}
-.login-left{flex:1;background:linear-gradient(160deg,#1D1D1F 0%,#12233A 55%,#0A2E52 100%);display:flex;flex-direction:column;justify-content:center;padding:4rem 3.5rem;min-height:100vh;position:relative;overflow:hidden}
-.login-left::after{content:'';position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(0,113,227,.28),transparent 68%);top:-140px;right:-160px;pointer-events:none}
+.login-left{flex:1;background:linear-gradient(160deg,#0B1B33 0%,#0F2A4F 55%,#0B3D7A 100%);display:flex;flex-direction:column;justify-content:center;padding:4rem 3.5rem;min-height:100vh;position:relative;overflow:hidden}
+.login-left::after{content:'';position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(14,111,219,.28),transparent 68%);top:-140px;right:-160px;pointer-events:none}
 .login-left-logo{display:flex;align-items:center;gap:14px;margin-bottom:3.5rem;position:relative}
 .login-left-icon{width:48px;height:48px;background:rgba(255,255,255,.12);backdrop-filter:blur(20px);border:.5px solid rgba(255,255,255,.16);border-radius:14px;display:flex;align-items:center;justify-content:center}
 .login-left-name{font-size:21px;font-weight:600;color:#fff;letter-spacing:-.02em}
@@ -59,7 +61,7 @@ input,select,textarea,button{font-family:var(--font);letter-spacing:inherit}
 .login-field{margin-bottom:14px}
 .login-field label{font-size:12px;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;text-transform:none;letter-spacing:-.005em}
 .login-field input{width:100%;padding:12px 14px;font-size:14px;border:.5px solid var(--gray-border-mid);border-radius:11px;background:var(--bg-primary);color:var(--text-primary);outline:none;transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}
-.login-field input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,113,227,.1)}
+.login-field input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(14,111,219,.1)}
 .login-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .login-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:500;cursor:pointer;margin-top:1rem;transition:background .18s var(--ease),transform .12s var(--ease)}
 .login-btn:hover{background:var(--blue-dark)}
@@ -83,7 +85,7 @@ input,select,textarea,button{font-family:var(--font);letter-spacing:inherit}
 .app-layout{display:flex;min-height:100vh}
 .sidebar{width:236px;background:rgba(255,255,255,.72);backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);border-right:.5px solid var(--gray-border);display:flex;flex-direction:column;min-height:100vh;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:100}
 .logo{padding:1.5rem 1.25rem 1.25rem}
-.logo-icon{width:38px;height:38px;background:linear-gradient(150deg,#0071E3,#0A5BB8);border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;box-shadow:0 4px 12px rgba(0,113,227,.24)}
+.logo-icon{width:38px;height:38px;background:linear-gradient(150deg,#0E6FDB,#0058B8);border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;box-shadow:0 4px 12px rgba(14,111,219,.24)}
 .logo-name{font-size:16px;font-weight:600;letter-spacing:-.02em}
 .logo-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
 .logo-user{font-size:12px;color:var(--blue);font-weight:500;margin-top:4px}
@@ -106,7 +108,7 @@ input,select,textarea,button{font-family:var(--font);letter-spacing:inherit}
 .btn{padding:8px 16px;font-size:13.5px;border-radius:9px;cursor:pointer;font-weight:500;border:.5px solid var(--gray-border-mid);background:var(--bg-primary);color:var(--text-primary);transition:background .16s var(--ease),transform .12s var(--ease),box-shadow .16s var(--ease);box-shadow:var(--shadow-sm)}
 .btn:hover{background:var(--bg-secondary)}
 .btn:active{transform:scale(.97)}
-.btn.primary{background:var(--blue);color:#fff;border-color:transparent;box-shadow:0 1px 3px rgba(0,113,227,.28)}
+.btn.primary{background:var(--blue);color:#fff;border-color:transparent;box-shadow:0 1px 3px rgba(14,111,219,.28)}
 .btn.primary:hover{background:var(--blue-dark)}
 .btn.sm{padding:5px 11px;font-size:12px}
 .stats-grid{display:grid;gap:14px;margin-bottom:1.5rem}
@@ -211,7 +213,7 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 .field{margin-bottom:14px}
 .field label{font-size:12.5px;color:var(--text-secondary);display:block;margin-bottom:6px;font-weight:500}
 .field input,.field select,.field textarea{width:100%;padding:10px 13px;font-size:14px;border:.5px solid var(--gray-border-mid);border-radius:10px;background:var(--bg-primary);color:var(--text-primary);outline:none;transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,113,227,.1)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(14,111,219,.1)}
 .field textarea{resize:vertical;min-height:78px;line-height:1.5}
 .form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .modal-actions{display:flex;gap:10px;margin-top:1.6rem}
@@ -222,7 +224,7 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 .btn-save:active{transform:scale(.985)}
 .crm-bar{display:flex;gap:10px;padding:1rem 1.35rem;border-bottom:.5px solid var(--gray-border);align-items:center}
 .crm-search{flex:1;padding:9px 13px;font-size:14px;border:.5px solid var(--gray-border-mid);border-radius:10px;background:var(--bg-primary);color:var(--text-primary);outline:none;transition:border-color .18s var(--ease),box-shadow .18s var(--ease)}
-.crm-search:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(0,113,227,.1)}
+.crm-search:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(14,111,219,.1)}
 .evo-up{color:var(--green-mid);font-weight:500}
 .evo-down{color:var(--red-mid);font-weight:500}
 .evo-neu{color:var(--text-tertiary)}
@@ -406,18 +408,18 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
   background:linear-gradient(112deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.03) 24%,transparent 40%,transparent 70%,rgba(255,255,255,.06) 100%)}
 
 /* — Barre latérale graphite — */
-.sidebar{background:linear-gradient(180deg,#1C1C1F 0%,#141417 100%);backdrop-filter:none;-webkit-backdrop-filter:none;border-right:.5px solid rgba(255,255,255,.07)}
+.sidebar{background:linear-gradient(180deg,#0F2240 0%,#0B1B33 100%);backdrop-filter:none;-webkit-backdrop-filter:none;border-right:.5px solid rgba(255,255,255,.07)}
 .logo{border-bottom:.5px solid rgba(255,255,255,.07)}
 .logo-name{color:#F5F5F7}
 .logo-sub{color:rgba(255,255,255,.42)}
-.logo-user{color:#5AA9FF}
+.logo-user{color:#7CC4FF}
 .nav-section{color:rgba(255,255,255,.32)}
 .nav-item{color:rgba(255,255,255,.6);position:relative}
 .nav-item:hover{background:rgba(255,255,255,.06);color:#F5F5F7}
 .nav-item.active{background:rgba(255,255,255,.1);color:#fff;font-weight:500}
-.nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:17px;border-radius:0 3px 3px 0;background:#0A84FF;box-shadow:0 0 10px rgba(10,132,255,.7)}
+.nav-item.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:17px;border-radius:0 3px 3px 0;background:#2E9BFF;box-shadow:0 0 10px rgba(46,155,255,.7)}
 .nav-badge{background:rgba(255,255,255,.11);color:rgba(255,255,255,.72)}
-.nav-item.active .nav-badge{background:#0A84FF;color:#fff}
+.nav-item.active .nav-badge{background:#2E9BFF;color:#fff}
 .nav-badge.green{background:rgba(48,209,88,.18);color:#4ADE80}
 .sidebar-footer{border-top:.5px solid rgba(255,255,255,.07)}
 .logout-btn{color:rgba(255,255,255,.5)}
@@ -429,7 +431,7 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
   background:linear-gradient(145deg,#212125 0%,#151519 52%,#0D1B2E 100%);
   box-shadow:0 20px 50px -22px rgba(0,0,0,.55),0 1px 2px rgba(0,0,0,.2)}
 .hero::before{content:'';position:absolute;width:460px;height:460px;border-radius:50%;top:-230px;right:-100px;z-index:1;
-  background:radial-gradient(circle,rgba(10,132,255,.38),transparent 66%);pointer-events:none}
+  background:radial-gradient(circle,rgba(46,155,255,.38),transparent 66%);pointer-events:none}
 .hero>*{position:relative;z-index:3}
 .hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:1.5rem}
 .hero-date{font-size:12px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.09em;font-weight:500;margin-bottom:7px}
@@ -439,7 +441,7 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
   background:rgba(255,255,255,.08);color:#fff;backdrop-filter:blur(10px);transition:background .18s var(--ease),transform .12s var(--ease)}
 .hero-btn:hover{background:rgba(255,255,255,.15)}
 .hero-btn:active{transform:scale(.97)}
-.hero-btn.solid{background:#0A84FF;border-color:transparent;box-shadow:0 3px 14px rgba(10,132,255,.42)}
+.hero-btn.solid{background:#2E9BFF;border-color:transparent;box-shadow:0 3px 14px rgba(46,155,255,.42)}
 .hero-btn.solid:hover{background:#3D9BFF}
 .hero-stats{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
 .hero-stat{padding-right:2.4rem;margin-right:2.4rem;border-right:.5px solid rgba(255,255,255,.13)}
@@ -453,7 +455,7 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 .metric>*{position:relative;z-index:1}
 .metric::after{content:'';position:absolute;top:0;left:0;right:0;height:74px;z-index:0;pointer-events:none;
   background:linear-gradient(180deg,var(--accent-soft,transparent),transparent);opacity:.6}
-.metric::before{background:linear-gradient(90deg,var(--accent,var(--blue)),color-mix(in srgb,var(--accent,#0071E3) 45%,#fff))}
+.metric::before{background:linear-gradient(90deg,var(--accent,var(--blue)),color-mix(in srgb,var(--accent,#0E6FDB) 45%,#fff))}
 
 /* — Arrivée en cascade des lignes — */
 @keyframes rowIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
@@ -581,6 +583,10 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
   .page-more-wrap{display:inline-block}
   .page-tabs{flex-wrap:nowrap;overflow-x:auto;width:auto;-webkit-overflow-scrolling:touch}
 }
+
+/* — Logo — */
+.logo-icon{width:40px;height:40px;background:none;box-shadow:0 0 0 .5px rgba(255,255,255,.14);border-radius:11px;display:block;object-fit:cover}
+.login-left-icon{width:64px;height:64px;padding:0;background:none;border:none;box-shadow:0 0 0 .5px rgba(255,255,255,.18);border-radius:18px;display:block;object-fit:cover}
 </style>
 </head>
 <body>
@@ -1022,7 +1028,7 @@ const CAT_DEP=['Produits nettoyage','Carburant','Matériel','Publicité','Format
 const MOYENS=['Carte bancaire','Virement bancaire','Espèces','Chèque','Prélèvement automatique'];
 const STATUTS=[
   {v:'client',l:'✅ Client',color:'#2d7a2d',bg:'#e8f5e9'},
-  {v:'en_cours',l:'🔄 En cours',color:'#0071E3',bg:'#E6F1FB'},
+  {v:'en_cours',l:'🔄 En cours',color:'#0E6FDB',bg:'#E6F1FB'},
   {v:'tentative',l:'📞 Tentative de contact',color:'#633806',bg:'#FAEEDA'},
   {v:'non_qualifie',l:'❌ Non qualifié',color:'#c0392b',bg:'#fde8e8'},
   {v:'new',l:'🆕 Nouveau lead',color:'#666',bg:'#f5f5f5'},
@@ -1039,7 +1045,7 @@ function pStLead(v){ const s=getStatutStyle(v); return `<span style="padding:3px
 
 
 function avatarGrad(name){
-  const P=[['#0071E3','#0A4FA0'],['#5E5CE6','#3B39A8'],['#FF9500','#C25E00'],['#30B0C7','#0A7887'],
+  const P=[['#0E6FDB','#0A4FA0'],['#5E5CE6','#3B39A8'],['#FF9500','#C25E00'],['#30B0C7','#0A7887'],
            ['#34C759','#1B8A45'],['#FF375F','#C21E45'],['#AF52DE','#7A2BAE'],['#FFB340','#D07C00']];
   let x=0,s=String(name||'?');
   for(let i=0;i<s.length;i++) x=(x*31+s.charCodeAt(i))>>>0;
@@ -1499,7 +1505,7 @@ function renderAdmin(){
   document.body.innerHTML = `
     <div style="min-height:100vh;background:#F7F7F5;font-family:-apple-system,sans-serif">
       <!-- Header -->
-      <div style="background:#0071E3;color:white;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center">
+      <div style="background:#0E6FDB;color:white;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:18px;font-weight:700">🛡️ Panneau Admin — Académie</div>
           <div style="font-size:12px;opacity:0.8">Connecté en tant que ${currentUser.email}</div>
@@ -1512,7 +1518,7 @@ function renderAdmin(){
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:2rem">
           <div style="background:white;border-radius:12px;padding:1.25rem;border:0.5px solid #e5e5e5">
             <div style="font-size:12px;color:#666;margin-bottom:4px">Élèves total</div>
-            <div style="font-size:28px;font-weight:700;color:#0071E3">${ad.profiles.length}</div>
+            <div style="font-size:28px;font-weight:700;color:#0E6FDB">${ad.profiles.length}</div>
           </div>
           <div style="background:white;border-radius:12px;padding:1.25rem;border:0.5px solid #e5e5e5">
             <div style="font-size:12px;color:#666;margin-bottom:4px">Accès actifs</div>
@@ -1565,7 +1571,7 @@ function renderAdmin(){
                       <td style="padding:12px 16px">${adminSmsCell(p.id)}</td>
                       <td style="padding:12px 16px;text-align:center">
                         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-                          <button onclick="window.open(location.pathname+'?voir=${p.id}','_blank')" title="Ouvre son CRM en lecture seule" style="background:#EDF4FE;color:#0062C4;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">👁 Voir</button>
+                          <button onclick="window.open(location.pathname+'?voir=${p.id}','_blank')" title="Ouvre son CRM en lecture seule" style="background:#EDF4FE;color:#0058B8;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">👁 Voir</button>
                           ${isSusp
                             ? `<button onclick="toggleAccess('${p.id}','actif','')" style="background:#e8f5e9;color:#2d7a2d;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">✅ Réactiver</button>`
                             : `<button onclick="promptSuspend('${p.id}')" style="background:#fde8e8;color:#c0392b;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500">🔒 Suspendre</button>`
@@ -1600,7 +1606,7 @@ function renderAdmin(){
             <span style="font-size:13px;color:#666">SMS →</span><input data-f="unit" type="number" step="0.001" min="0.001" value="${(Number(t.unit_cents)/100).toFixed(3)}" style="width:90px;padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:13px">
             <span style="font-size:13px;color:#666">€ / SMS</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#c0392b;cursor:pointer;font-size:16px">×</button></div>`).join('')}</div>
           <button onclick="adminAddTier()" style="background:#f0f0f0;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;margin-bottom:14px">+ Ajouter un palier</button><br>
-          <button onclick="adminSaveSmsSettings()" style="background:#0071E3;color:white;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500">Enregistrer</button>
+          <button onclick="adminSaveSmsSettings()" style="background:#0E6FDB;color:white;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500">Enregistrer</button>
         </div>
 
         <!-- Noms d'expéditeur SMS -->
@@ -1619,7 +1625,7 @@ function renderAdmin(){
               <div style="font-size:12px;color:#666;margin-bottom:4px">Date d'expiration</div>
               <input id="new-eleve-expiry" type="date" style="width:100%;padding:8px 10px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
             </div>
-            <button onclick="addEleve()" style="background:#0071E3;color:white;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap">Ajouter</button>
+            <button onclick="addEleve()" style="background:#0E6FDB;color:white;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap">Ajouter</button>
           </div>
         </div>
       </div>
@@ -1632,7 +1638,7 @@ function adminMetaCard(ad){
   const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const who=uid=>{ const p=(ad.profiles||[]).find(x=>x.id===uid); return p?(`${p.prenom||''} ${p.nom||''}`.trim()||p.identifiant||'—'):'—'; };
   const cfgs=ad.metaCfg||[], evs=ad.metaEv||[];
-  const stCol={sent:['#EAF7EC','#1D6B2E','Envoyé'],pending:['#E6F1FB','#0071E3','En attente'],failed:['#fde8e8','#c0392b','Échec']};
+  const stCol={sent:['#EAF7EC','#1D6B2E','Envoyé'],pending:['#E6F1FB','#0E6FDB','En attente'],failed:['#fde8e8','#c0392b','Échec']};
   const rows=cfgs.length===0?'<div style="font-size:13px;color:#999;padding:6px 0">Aucun élève configuré.</div>':cfgs.map(c=>`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;border:0.5px solid #e5e5e5;border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:13px"><strong style="min-width:140px">${esc(who(c.user_id))}</strong><span style="font-family:monospace">${esc(c.dataset_id)}</span><span style="color:#1D6B2E">jeton ✓</span>${c.test_event_code?`<span style="background:#FFF4E5;color:#8A4B00;border-radius:100px;padding:2px 9px;font-size:11.5px">mode test : ${esc(c.test_event_code)}</span>`:''}<span style="background:${c.enabled?'#EAF7EC':'#f0f0f0'};color:${c.enabled?'#1D6B2E':'#666'};border-radius:100px;padding:2px 9px;font-size:11.5px;font-weight:600">${c.enabled?'Actif':'Désactivé'}</span><button onclick="adminMetaEdit('${c.user_id}')" style="margin-left:auto;background:#f0f0f0;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">Modifier</button></div>`).join('');
   const log=evs.length===0?'<div style="font-size:13px;color:#999;padding:6px 0">Aucun événement envoyé pour l\'instant.</div>':`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="color:#888;text-align:left"><th style="padding:5px 8px">Date</th><th style="padding:5px 8px">Élève</th><th style="padding:5px 8px">Étape</th><th style="padding:5px 8px">Statut</th><th style="padding:5px 8px">Réponse de Meta</th></tr></thead><tbody>${evs.map(e=>{const b=stCol[e.status]||stCol.pending; return `<tr style="border-top:0.5px solid #eee"><td style="padding:5px 8px;white-space:nowrap">${new Date(e.created_at).toLocaleString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td><td style="padding:5px 8px">${esc(who(e.user_id))}</td><td style="padding:5px 8px"><strong>${esc(e.stage)}</strong></td><td style="padding:5px 8px"><span style="background:${b[0]};color:${b[1]};border-radius:100px;padding:2px 9px;font-size:11.5px;font-weight:600">${b[2]}</span></td><td style="padding:5px 8px;color:#666;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(e.response)}">${esc(e.http_status||'')} ${esc(e.response||'')}</td></tr>`;}).join('')}</tbody></table></div>`;
   return `<div style="background:white;border-radius:12px;border:0.5px solid #e5e5e5;padding:1.25rem;margin-top:1.5rem">
@@ -1646,7 +1652,7 @@ function adminMetaCard(ad){
         <input id="meta-token" type="password" autocomplete="off" placeholder="Jeton d'accès (laisser vide = inchangé)" style="width:230px;padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12.5px">
         <input id="meta-test" placeholder="Code test (optionnel)" style="width:150px;padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12.5px">
         <label style="display:flex;align-items:center;gap:5px;font-size:12.5px"><input id="meta-on" type="checkbox" checked> Actif</label>
-        <button onclick="adminMetaSave()" style="background:#0071E3;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:500">Enregistrer</button></div></div>
+        <button onclick="adminMetaSave()" style="background:#0E6FDB;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:500">Enregistrer</button></div></div>
     <div style="border-top:0.5px solid #eee;padding-top:12px;margin-top:14px"><div style="font-size:12px;color:#666;margin-bottom:6px">Derniers événements envoyés à Meta :</div>${log}</div></div>`;
 }
 function adminMetaEdit(uid){
@@ -1663,7 +1669,7 @@ async function adminMetaSave(){
   await refreshAdmin();
 }
 // ----- Admin : suivi des noms d'expéditeur SMS des élèves -----
-const ADM_SR_STATUS={demande:['#E6F1FB','#0071E3','À déposer chez Brevo'],depose:['#FFF4E5','#8A4B00','Déposé, en attente'],approuve:['#EAF7EC','#1D6B2E','Approuvé'],refuse:['#fde8e8','#c0392b','Refusé']};
+const ADM_SR_STATUS={demande:['#E6F1FB','#0E6FDB','À déposer chez Brevo'],depose:['#FFF4E5','#8A4B00','Déposé, en attente'],approuve:['#EAF7EC','#1D6B2E','Approuvé'],refuse:['#fde8e8','#c0392b','Refusé']};
 function adminSendersCard(ad){
   const list=ad.senders||[]; const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const who=uid=>{ const p=(ad.profiles||[]).find(x=>x.id===uid); return p?`${p.prenom||''} ${p.nom||''}`.trim()||p.identifiant||'—':'—'; };
@@ -1677,7 +1683,7 @@ function adminSendersCard(ad){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
         <select id="sr-st-${r.id}" style="padding:6px 8px;border:0.5px solid #ddd;border-radius:6px;font-size:12.5px">${Object.keys(ADM_SR_STATUS).map(k=>`<option value="${k}"${r.status===k?' selected':''}>${ADM_SR_STATUS[k][2]}</option>`).join('')}</select>
         <input id="sr-note-${r.id}" value="${esc(r.admin_note)}" placeholder="Remarque pour l'élève (ex : envoie ton avis INSEE)" style="flex:1;min-width:200px;padding:6px 10px;border:0.5px solid #ddd;border-radius:6px;font-size:12.5px">
-        <button onclick="adminSrSave('${r.user_id}',${r.id})" style="background:#0071E3;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:500">Enregistrer</button>
+        <button onclick="adminSrSave('${r.user_id}',${r.id})" style="background:#0E6FDB;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12.5px;font-weight:500">Enregistrer</button>
         <button onclick="adminSrCopy(${r.id})" style="background:#f0f0f0;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12.5px">📋 Copier le dossier Brevo</button></div></div>`;
   }).join('');
   return `<div style="background:white;border-radius:12px;border:0.5px solid #e5e5e5;padding:1.25rem;margin-top:1.5rem">
@@ -1827,12 +1833,13 @@ async function addEleve(){
 }
 
 
+const LOGO_URI='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyRTlCRkYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMDU4QjgiLz48L2xpbmVhckdyYWRpZW50PjxjbGlwUGF0aCBpZD0iYyI+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIxNTAiLz48L2NsaXBQYXRoPjwvZGVmcz48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgZmlsbD0iIzBCMUIzMyIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTUwIiBmaWxsPSJ1cmwoI2cpIi8+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSI5OCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjEyIiBvcGFjaXR5PSIuOSIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iNDQiIGZpbGw9IiNmZmYiLz48ZyBjbGlwLXBhdGg9InVybCgjYykiPjxyZWN0IHg9IjE1MCIgeT0iNjAiIHdpZHRoPSI2NCIgaGVpZ2h0PSI0MDAiIHJ4PSIyMCIgZmlsbD0iI2ZmZiIgb3BhY2l0eT0iLjI4IiB0cmFuc2Zvcm09InJvdGF0ZSgzOCAyNTYgMjU2KSB0cmFuc2xhdGUoNzAgMCkiLz48L2c+PC9zdmc+';
 function renderLogin(){
   $('root').innerHTML=`
   <div class="login-page">
     <div class="login-left">
       <div class="login-left-logo">
-        <div class="login-left-icon"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="9" r="4.5" fill="white"/><path d="M4 24c0-5 4-9 9-9s9 4 9 9" stroke="white" stroke-width="2"/></svg></div>
+        <img class="login-left-icon" src="${LOGO_URI}" alt="" width="64" height="64">
         <div><div class="login-left-name">Académie</div><div class="login-left-sub">Espace formation</div></div>
       </div>
       <div class="login-left-title">Lance et développe ton business de nettoyage auto</div>
@@ -2100,7 +2107,7 @@ function renderSuspended(msg){
         <div style="font-size:48px;margin-bottom:1rem">🔒</div>
         <h2 style="font-size:20px;font-weight:700;color:#1a1a1a;margin-bottom:0.5rem">Accès suspendu</h2>
         <p style="color:#666;font-size:14px;line-height:1.6;margin-bottom:1.5rem">${msg||'Ton accès à Académie a été suspendu. Contacte Thomas pour régulariser ta situation.'}</p>
-        <a href="mailto:contact.ecolia76@gmail.com" style="display:inline-block;background:#0071E3;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">Contacter Thomas</a>
+        <a href="mailto:contact.ecolia76@gmail.com" style="display:inline-block;background:#0E6FDB;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">Contacter Thomas</a>
         <div style="margin-top:1rem"><button onclick="adminLogout()" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer">Se déconnecter</button></div>
       </div>
     </div>`;
@@ -2398,7 +2405,7 @@ function renderSidebar(){
     ]},
   ];
   let h=`<div class="logo">
-    <div class="logo-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" fill="white"/><path d="M3 18c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke="white" stroke-width="1.8"/></svg></div>
+    <img class="logo-icon" src="${LOGO_URI}" alt="" width="40" height="40">
     <div class="logo-name">Académie</div>
     <div class="logo-sub">Espace élève</div>
     <div class="logo-user">${name}</div>
@@ -2605,7 +2612,7 @@ function pageDashboard(){
   ${googleLostHtml()}${bookingNoticeHtml()}${coachIssuesCard()}${coachSetupCard()}
 
   <div class="metrics cols4">
-    <div class="metric" style="--accent:#0071E3;--accent-soft:#EDF4FE">
+    <div class="metric" style="--accent:#0E6FDB;--accent-soft:#EDF4FE">
       <div class="metric-top"><span class="metric-label">CA total</span><span class="metric-ico"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12.5l3.5-4 3 2.5 5.5-6"/><path d="M10.5 5h3.5v3.5"/></svg></span></div>
       <div class="metric-val">${tCA.toFixed(0)}€</div>
       <div class="metric-foot">Toutes prestations</div>
@@ -3061,7 +3068,7 @@ window.addEventListener('focus',()=>{ refreshFromServer(true); });
 window.addEventListener('online',()=>{ refreshFromServer(true); });
 setInterval(()=>{ if(!document.hidden) refreshFromServer(false); },45000);
 
-function loadProfil(){ D.profil={siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#0071E3',iban:''}; try{const saved=localStorage.getItem('ecolia_profil_'+currentUser.id);if(saved)D.profil=JSON.parse(saved);}catch(e){}}function loadProfilOLD(){
+function loadProfil(){ D.profil={siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#0E6FDB',iban:''}; try{const saved=localStorage.getItem('ecolia_profil_'+currentUser.id);if(saved)D.profil=JSON.parse(saved);}catch(e){}}function loadProfilOLD(){
   try{
     const saved = localStorage.getItem('ecolia_profil_'+currentUser.id);
     if(saved) D.profil = JSON.parse(saved);
@@ -4194,7 +4201,7 @@ function smxSenderCard(){
   const r=S.sms.senderReq, status=r?r.status:'none';
   const f=smxSenderForm(), esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   const editable=(status==='none'||status==='demande'||status==='refuse');
-  const badge={none:['#FFF4E5','#8A4B00','À faire'],demande:['#E6F1FB','#0071E3','Demande envoyée'],depose:['#E6F1FB','#0071E3','En cours de validation chez Brevo'],approuve:['#EAF7EC','#1D6B2E','Approuvé'],refuse:['#fde8e8','#c0392b','Refusé']}[status];
+  const badge={none:['#FFF4E5','#8A4B00','À faire'],demande:['#E6F1FB','#0E6FDB','Demande envoyée'],depose:['#E6F1FB','#0E6FDB','En cours de validation chez Brevo'],approuve:['#EAF7EC','#1D6B2E','Approuvé'],refuse:['#fde8e8','#c0392b','Refusé']}[status];
   const intro={
     none:"Pour que tes SMS affichent le nom de ton entreprise (et pas celui d'un autre), ton nom doit être <strong>approuvé par l'opérateur</strong>. Remplis ce formulaire une seule fois : Thomas fait la demande pour toi. <strong>Tant que ton nom n'est pas approuvé, aucun SMS ne part chez tes clients.</strong>",
     demande:"Ta demande est enregistrée. Envoie à Thomas les 2 documents ci-dessous : il la dépose ensuite chez l'opérateur (quelques jours ouvrés). Tu peux encore corriger le formulaire.",
@@ -4249,7 +4256,7 @@ function smxAuthLetter(){
     h1{font-size:21px;margin:0 0 4px}.sub{color:#555;font-size:13px;margin-bottom:28px}
     .box{border:1px solid #bbb;border-radius:6px;padding:12px 16px;margin:14px 0}.box div{margin:3px 0}
     .sig{margin-top:44px;display:flex;justify-content:space-between;gap:40px}.sig div{flex:1;border-top:1px solid #333;padding-top:6px;font-size:13px;color:#444}
-    button{font:600 14px sans-serif;padding:10px 18px;border:0;border-radius:8px;background:#0071E3;color:#fff;cursor:pointer;margin-bottom:22px}
+    button{font:600 14px sans-serif;padding:10px 18px;border:0;border-radius:8px;background:#0E6FDB;color:#fff;cursor:pointer;margin-bottom:22px}
     @media print{button{display:none}body{margin:0}}</style></head><body>
     <button onclick="window.print()">🖨 Imprimer / Enregistrer en PDF</button>
     <h1>Autorisation d'utilisation d'un nom d'expéditeur SMS</h1><div class="sub">À joindre à la demande d'enregistrement auprès de l'opérateur d'envoi de SMS</div>
@@ -5170,7 +5177,7 @@ function pageFactureForm(doc, type){
   const totalHT = lignes.reduce((s,l)=>s+(parseFloat(l.quantite||1)*parseFloat(l.prix||0)),0);
   const totalTTC = totalHT*(1+tva/100);
   const p = D.profil;
-  const couleur = p.couleur||'#0071E3';
+  const couleur = p.couleur||'#0E6FDB';
 
   // Store working copy in S.formDoc
   if(!S.formDoc || S.formDoc._docId !== (doc?.id||'new')){
@@ -5442,7 +5449,7 @@ function pageFacturePreview(id){
   const doc = D.factures.find(f=>f.id===id);
   if(!doc){ S.previewDocId=null; return pageFactures(); }
   const p = D.profil;
-  const couleur = p.couleur||'#0071E3';
+  const couleur = p.couleur||'#0E6FDB';
   const tva = doc.tva||0;
   const totalHT = doc.lignes.reduce((s,l)=>s+(l.quantite*l.prix),0);
   const totalTVA = totalHT*tva/100;
@@ -5652,7 +5659,7 @@ function nav(p){
 
 async function logout(){
   await hardSignOut();
-  currentUser=null;currentProfile=null;D={events:[],clients:[],depenses:[],kpis:[],quizState:{},factures:[],prestations:[{id:1,nom:'Nettoyage intérieur',prix:80,description:''},{id:2,nom:'Nettoyage extérieur',prix:60,description:''},{id:3,nom:'Nettoyage complet',prix:130,description:''},{id:4,nom:'Protection céramique',prix:250,description:''},{id:5,nom:'Polish / Correction',prix:180,description:''}],options:[],profil:{siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#0071E3',iban:''},nextFactureNum:1};
+  currentUser=null;currentProfile=null;D={events:[],clients:[],depenses:[],kpis:[],quizState:{},factures:[],prestations:[{id:1,nom:'Nettoyage intérieur',prix:80,description:''},{id:2,nom:'Nettoyage extérieur',prix:60,description:''},{id:3,nom:'Nettoyage complet',prix:130,description:''},{id:4,nom:'Protection céramique',prix:250,description:''},{id:5,nom:'Polish / Correction',prix:180,description:''}],options:[],profil:{siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#0E6FDB',iban:''},nextFactureNum:1};
   const mn=$('mobile-nav');if(mn)mn.style.display='none';
   renderLogin();
 }
@@ -5698,7 +5705,7 @@ const manifestData = {
   start_url: "/",
   display: "standalone",
   background_color: "#F7F7F5",
-  theme_color: "#0071E3",
+  theme_color: "#0E6FDB",
   orientation: "portrait",
   icons: [
     {src:"https://placehold.co/192x192/185FA5/ffffff?text=E", sizes:"192x192", type:"image/png"},
@@ -5724,7 +5731,7 @@ function showInstallBanner(){
   if(document.getElementById('install-banner')) return;
   const banner = document.createElement('div');
   banner.id = 'install-banner';
-  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0071E3;color:white;padding:10px 20px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;font-family:-apple-system,sans-serif;white-space:nowrap';
+  banner.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0E6FDB;color:white;padding:10px 20px;border-radius:100px;font-size:13px;font-weight:600;cursor:pointer;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;font-family:-apple-system,sans-serif;white-space:nowrap';
   banner.textContent = 'Installer Académie';
   banner.onclick = async () => {
     if(deferredPrompt){ deferredPrompt.prompt(); const r = await deferredPrompt.userChoice; deferredPrompt=null; }
