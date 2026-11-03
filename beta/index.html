@@ -2169,7 +2169,7 @@ function onbRender(){
   const o=S.onb; if(!o) return;
   let el=document.getElementById('onb'); if(!el){ el=document.createElement('div'); el.id='onb'; document.body.appendChild(el); }
   const k=o.steps[o.i], total=o.steps.length-1;
-  const inp=(id,label,val,ph,type)=>`<div style="margin-bottom:12px"><label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:5px">${label}</label><input id="${id}" type="${type||'text'}" value="${_onbE(val)}" placeholder="${_onbE(ph||'')}" style="width:100%;padding:10px 12px;border:0.5px solid var(--gray-border-mid);border-radius:9px;font-size:15px;box-sizing:border-box;font-family:inherit"></div>`;
+  const inp=(id,label,val,ph,type)=>`<div style="margin-bottom:12px">${label?`<label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:5px">${label}</label>`:''}<input id="${id}" type="${type||'text'}" value="${_onbE(val)}" placeholder="${_onbE(ph||'')}" style="width:100%;padding:10px 12px;border:0.5px solid var(--gray-border-mid);border-radius:9px;font-size:15px;box-sizing:border-box;font-family:inherit"></div>`;
   let body='';
   if(k==='company'){
     body=`<h2>Comment s'appelle ton entreprise ?</h2><p class="onb-sub">Ce nom apparaît sur tes SMS, ta page de réservation, tes devis et tes factures.</p>
@@ -2183,11 +2183,15 @@ function onbRender(){
       <span class="onb-link" onclick="onbAddPrest()">+ Ajouter une prestation</span>`;
   } else if(k==='booking'){
     const b=D.booking||{}, w=b.windows||{}, ds=[1,2,3,4,5,6,7].map(d=>({d,on:b.windows?!!w[d]:d<=6}));
-    const first=Object.values(w)[0], from=first?first[0][0]:'09:00', to=first?first[first.length-1][1]:'18:00';
+    const first=Object.values(w)[0]||[], r1=first[0]||['09:00','12:00'], r2=first[1]||(first.length?['','']:['14:00','18:00']);
     body=`<h2>Ta page de réservation en ligne</h2><p class="onb-sub">Tes prospects choisissent eux-mêmes un créneau : le rendez-vous arrive directement dans ton agenda, sans que tu aies à les rappeler. <strong>Gratuit.</strong></p>
       <div style="font-size:12.5px;font-weight:600;margin-bottom:6px">Jours où tu prends des rendez-vous</div>
       <div class="onb-days">${ds.map(x=>`<label class="onb-day"><input type="checkbox" id="onb-d${x.d}" ${x.on?'checked':''}> ${BK_DAYS[x.d-1].slice(0,3)}</label>`).join('')}</div>
-      <div style="display:flex;gap:10px;margin:10px 0 12px"><div style="flex:1">${inp('onb-from','De',from,'','time')}</div><div style="flex:1">${inp('onb-to','À',to,'','time')}</div></div>
+      <div style="font-size:12.5px;font-weight:600;margin:12px 0 6px">Horaires</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Matin</div>
+      <div style="display:flex;gap:10px;margin-bottom:6px"><div style="flex:1">${inp('onb-from','',r1[0],'','time')}</div><div style="flex:1">${inp('onb-to','',r1[1],'','time')}</div></div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Après-midi <span>(facultatif : laisse vide si tu ne travailles pas l'après-midi)</span></div>
+      <div style="display:flex;gap:10px;margin-bottom:6px"><div style="flex:1">${inp('onb-from2','',r2[0],'','time')}</div><div style="flex:1">${inp('onb-to2','',r2[1],'','time')}</div></div>
       ${inp('onb-slug','Adresse de ta page',b.slug||bkSlugify(onbCompanyName()),'ex : clean-auto-76')}
       <p class="onb-note">Tu pourras ajuster les horaires précis plus tard dans « Réservation en ligne ».</p>`;
   } else {
@@ -2236,15 +2240,18 @@ async function onbSavePrest(){
 }
 function onbSkipBooking(){ onbNext(); }
 async function onbSaveBooking(){
-  const slug=document.getElementById('onb-slug').value.trim().toLowerCase(), a=document.getElementById('onb-from').value, z=document.getElementById('onb-to').value;
+  const slug=document.getElementById('onb-slug').value.trim().toLowerCase(), a=document.getElementById('onb-from').value, z=document.getElementById('onb-to').value, a2=document.getElementById('onb-from2').value, z2=document.getElementById('onb-to2').value;
   const days=[1,2,3,4,5,6,7].filter(d=>document.getElementById('onb-d'+d).checked);
   if(!/^[a-z0-9][a-z0-9-]{2,39}$/.test(slug)){ onbErr("L'adresse doit faire 3 à 40 caractères (lettres minuscules, chiffres, tirets)."); return; }
   if(!days.length){ onbErr("Coche au moins un jour."); return; }
-  if(!a||!z||z<=a){ onbErr("Les horaires ne sont pas valides : l'heure de fin doit être après l'heure de début."); return; }
+  if(!a||!z||z<=a){ onbErr("Les horaires du matin ne sont pas valides : l'heure de fin doit être après l'heure de début."); return; }
+  const second=!!(a2||z2);
+  if(second&&(!a2||!z2||z2<=a2)){ onbErr("Les horaires de l'après-midi ne sont pas valides : remplis le début et la fin (la fin après le début), ou vide les deux cases."); return; }
+  if(second&&a2<z){ onbErr("L'après-midi doit commencer après la fin du créneau du matin."); return; }
   const{data:free,error:e0}=await sb.rpc('booking_slug_free',{p_slug:slug});
   if(e0){ onbErr('Erreur : '+e0.message); return; }
   if(free===false){ onbErr("Cette adresse est déjà prise : choisis-en une autre."); return; }
-  const old=D.booking||{}, windows={}; days.forEach(d=>{ windows[d]=[[a,z]]; });
+  const old=D.booking||{}, windows={}; days.forEach(d=>{ windows[d]=second?[[a,z],[a2,z2]]:[[a,z]]; });
   const row={user_id:currentUser.id,slug,enabled:true,title:onbCompanyName()||old.title||null,zone:(S.onb.zone||old.zone||'').trim()||null,message:old.message||null,windows,capacity:old.capacity||1,min_notice_hours:old.min_notice_hours!=null?old.min_notice_hours:12,max_days_ahead:old.max_days_ahead||30,days_off:old.days_off||[],updated_at:new Date().toISOString()};
   const{error}=await sb.from('booking_settings').upsert(row,{onConflict:'user_id'});
   if(error){ onbErr('Erreur : '+error.message); return; }
