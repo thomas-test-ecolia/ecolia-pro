@@ -123,6 +123,10 @@ function slotsHtml(){
     <p class="note">Le prestataire arrive dans le créneau choisi et te prévient avant de venir.</p>`;
 }
 const promoParam=(new URLSearchParams(location.search).get('code')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,30);
+const SRC_NAMES={insta:'Instagram',instagram:'Instagram',ig:'Instagram',fb:'Facebook',facebook:'Facebook',tiktok:'TikTok',tt:'TikTok',whatsapp:'WhatsApp',wa:'WhatsApp',sms:'SMS',google:'Google',gmb:'Google',site:'Site web',bouche:'Bouche à oreille'};
+const srcRaw=(new URLSearchParams(location.search).get('src')||'').toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,20);
+const srcName=srcRaw?(SRC_NAMES[srcRaw]||(srcRaw.charAt(0).toUpperCase()+srcRaw.slice(1))):'';
+function noteText(){ const g=id=>$(id).value.trim(), l=[]; if(g('cp')) l.push('Code promo : '+g('cp').toUpperCase()); if(srcName) l.push('Source : '+srcName); if(g('o')) l.push(g('o')); return l.join('\n'); }
 function render(){
   const presta=(info.prestations||[]), any=Object.keys(byDay).some(d=>dayState(d)==='free');
   let h=`<h1>${esc(info.title)}</h1><p class="sub">${esc(info.zone||'Choisis le jour et le créneau qui te conviennent.')}</p>`;
@@ -163,7 +167,7 @@ async function submit(ev){
   if(!elec){ er.textContent='Indique s\'il y a une prise électrique à proximité (oui ou non).'; er.hidden=false; return; }
   go.disabled=true; go.textContent='Envoi…';
   try{
-    const r=await rpc('booking_create',{p_slug:slug,p_date:selDay,p_start:selSlot,p_name:v('n'),p_phone:v('t'),p_email:v('e')||null,p_prestation:v('p')||null,p_vehicle:v('v')||null,p_address:v('a'),p_notes:((v('cp')?'Code promo : '+v('cp').toUpperCase()+(v('o')?'\n':''):'')+v('o'))||null,p_website:v('w')||null,p_electricity:elec});
+    const r=await rpc('booking_create',{p_slug:slug,p_date:selDay,p_start:selSlot,p_name:v('n'),p_phone:v('t'),p_email:v('e')||null,p_prestation:v('p')||null,p_vehicle:v('v')||null,p_address:v('a'),p_notes:noteText()||null,p_website:v('w')||null,p_electricity:elec});
     if(!r||!r.ok){ er.textContent=REASONS[r&&r.reason]||'La réservation n\'a pas pu être enregistrée. Réessaie.'; er.hidden=false; go.disabled=false; go.textContent='Confirmer mon rendez-vous';
       if(r&&r.reason==='creneau_pris'){ selSlot=null; await load(); if(dayState(selDay)!=='free') selDay=null; render(); } return; }
     done(r);
