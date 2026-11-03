@@ -68,6 +68,17 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .empty{color:var(--muted);text-align:center;padding:14px 6px;font-size:14.5px}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 [hidden]{display:none!important}
+
+/* prestations */
+.pz{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:640px){.pz{grid-template-columns:1fr 1fr}}
+.pc{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:12px 14px;font:inherit;cursor:pointer}
+.pc:hover{border-color:var(--accent)}
+.pc.sel{border-color:var(--accent);background:var(--accent-soft)}
+.pc .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-weight:700}
+.pc .t b{font-weight:700}.pc .pr{color:var(--accent);white-space:nowrap}
+.pc .m{font-size:12.5px;color:var(--muted);margin-top:2px}
+.pc .d{font-size:13.5px;color:var(--text);margin-top:6px;line-height:1.4;white-space:pre-line}
 </style>
 </head>
 <body>
@@ -122,6 +133,8 @@ function slotsHtml(){
     <div class="slots">${list.map(s=>s.free?`<button type="button" class="slot${selSlot===s.s?' sel':''}" data-s="${s.s}"><b>${fmtH(s.s)} – ${fmtH(s.e)}</b><small>Disponible</small></button>`:`<button type="button" class="slot" disabled><b>${fmtH(s.s)} – ${fmtH(s.e)}</b><small>Complet</small></button>`).join('')}</div>
     <p class="note">Le prestataire arrive dans le créneau choisi et te prévient avant de venir.</p>`;
 }
+let selPresta='';
+function fmtDur(m){ m=Number(m)||0; if(m<60) return m+' min'; const h=Math.floor(m/60), r=m%60; return h+' h'+(r?(' '+String(r).padStart(2,'0')):''); }
 const promoParam=(new URLSearchParams(location.search).get('code')||'').replace(/[^A-Za-z0-9_-]/g,'').slice(0,30);
 const SRC_NAMES={insta:'Instagram',instagram:'Instagram',ig:'Instagram',fb:'Facebook',facebook:'Facebook',tiktok:'TikTok',tt:'TikTok',whatsapp:'WhatsApp',wa:'WhatsApp',sms:'SMS',google:'Google',gmb:'Google',site:'Site web',bouche:'Bouche à oreille'};
 const srcRaw=(new URLSearchParams(location.search).get('src')||'').toLowerCase().replace(/[^a-z0-9_-]/g,'').slice(0,20);
@@ -138,7 +151,7 @@ function render(){
       <div><label for="n">Nom et prénom</label><input id="n" autocomplete="name" required></div>
       <div><label for="t">Téléphone portable</label><input id="t" type="tel" inputmode="tel" autocomplete="tel" placeholder="06 12 34 56 78" required></div>
       <div><label for="e">E-mail <small>(facultatif)</small></label><input id="e" type="email" inputmode="email" autocomplete="email"></div>
-      <div><label for="p">Prestation souhaitée</label><select id="p"><option value="">— Choisir —</option>${presta.map(x=>`<option value="${esc(x.nom)}">${esc(x.nom)}${x.prix?' — '+x.prix+' €':''}</option>`).join('')}<option value="Autre / à définir">Autre / à définir ensemble</option></select></div>
+      <div class="wide"><label>Prestation souhaitée</label><input type="hidden" id="p" value="${esc(selPresta)}"><div class="pz">${presta.map(x=>`<button type="button" class="pc${selPresta===x.nom?' sel':''}" data-p="${esc(x.nom)}"><span class="t"><b>${esc(x.nom)}</b>${x.prix?`<span class="pr">${esc(x.prix)} €</span>`:''}</span>${x.duree?`<div class="m">⏱ ${fmtDur(x.duree)}</div>`:''}${x.description?`<div class="d">${esc(x.description)}</div>`:''}</button>`).join('')}<button type="button" class="pc${selPresta==='Autre / à définir'?' sel':''}" data-p="Autre / à définir"><span class="t"><b>Autre / à définir ensemble</b></span><div class="m">On en discute ensemble avant le rendez-vous</div></button></div></div>
       <div><label for="v">Véhicule <small>(marque, modèle)</small></label><input id="v" placeholder="ex : Peugeot 308"></div>
       <div><label for="a">Adresse de l'intervention</label><input id="a" autocomplete="street-address" placeholder="12 rue des Lilas, 76000 Rouen" required></div>
       <div class="wide"><label>⚡ Y a-t-il une prise électrique accessible près du véhicule ?</label>
@@ -157,6 +170,7 @@ function render(){
   document.querySelectorAll('.slot[data-s]').forEach(b=>b.onclick=()=>{ selSlot=b.dataset.s; render(); const f=$('f'); f&&f.scrollIntoView({behavior:'smooth',block:'start'}); });
   const pm=$('pm'), nm=$('nm'); if(pm) pm.onclick=()=>{ vm--; if(vm<0){vm=11;vy--;} render(); }; if(nm) nm.onclick=()=>{ vm++; if(vm>11){vm=0;vy++;} render(); };
   document.querySelectorAll('input[name=el]').forEach(r=>r.onchange=()=>{ elec=r.value; $('yl1').classList.toggle('on',elec==='oui'); $('yl2').classList.toggle('on',elec==='non'); });
+  document.querySelectorAll('.pc[data-p]').forEach(b=>b.onclick=()=>{ selPresta=b.dataset.p; $('p').value=selPresta; document.querySelectorAll('.pc[data-p]').forEach(x=>x.classList.toggle('sel',x===b)); });
   const f=$('f'); if(f) f.onsubmit=submit;
 }
 const REASONS={creneau_pris:"Ce créneau vient d'être réservé par quelqu'un d'autre. Choisis-en un autre.",telephone_invalide:"Le numéro de téléphone n'est pas valide (portable, 10 chiffres).",nom_invalide:"Indique ton nom et ton prénom.",adresse_invalide:"Indique l'adresse complète de l'intervention.",trop_de_demandes:"Trop de demandes en peu de temps. Réessaie un peu plus tard ou appelle directement.",indisponible:"La réservation n'est plus disponible."};

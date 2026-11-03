@@ -1036,12 +1036,14 @@ const STATUTS=[
 ];
 function getStatutStyle(v){ return STATUTS.find(s=>s.v===v)||STATUTS[4]; }
 const SOURCES=[
-  {v:'meta_ads',l:'📱 Meta Ads (Facebook/Instagram)'},
-  {v:'google',l:'🔍 Google'},
+  {v:'meta_ads',l:'📱 Meta Ads (pub Facebook / Instagram)'},
+  {v:'organique',l:'🌱 Réseaux sociaux (organique : Instagram, Facebook, TikTok…)'},
+  {v:'site_web',l:'🌐 Site internet'},
+  {v:'google',l:'🔍 Google (recherche, fiche Google)'},
   {v:'bouche_a_oreille',l:'💬 Bouche-à-oreille / Recommandation'},
-  {v:'autre',l:'❓ Autre'},
+  {v:'autre',l:'❓ Autre / inconnu'},
 ];
-function getSourceLabel(v){ return (SOURCES.find(s=>s.v===v)||SOURCES[3]).l; }
+function getSourceLabel(v){ if(v==='google_agenda') return '📅 Importé de Google Agenda'; return (SOURCES.find(s=>s.v===v)||SOURCES[SOURCES.length-1]).l; }
 function pStLead(v){ const s=getStatutStyle(v); return `<span style="padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:${s.bg};color:${s.color}">${s.l}</span>`; }
 
 
@@ -2198,7 +2200,7 @@ function onbRender(){
   if(k==='company'){
     body=`<h2>Comment s'appelle ton entreprise ?</h2><p class="onb-sub">Ce nom apparaît sur tes SMS, ta page de réservation, tes devis et tes factures.</p>
       ${inp('onb-name','Nom de ton entreprise',onbCompanyName(),'ex : Clean Auto 76')}
-      ${inp('onb-phone','Téléphone professionnel <span style="font-weight:400;color:var(--text-secondary)">(facultatif)</span>',(D.profil&&D.profil.telephone)||'','06 12 34 56 78','tel')}
+      ${inp('onb-phone','Téléphone professionnel <span style="font-weight:400;color:var(--text-secondary)">(ajouté à tes SMS pour que tes clients puissent t’appeler ou annuler)</span>',(D.profil&&D.profil.telephone)||'','06 12 34 56 78','tel')}
       ${inp('onb-zone','Zone où tu interviens <span style="font-weight:400;color:var(--text-secondary)">(facultatif)</span>',o.zone,'ex : Rouen et 20 km autour')}`;
   } else if(k==='email'){
     body=`<h2>Où veux-tu recevoir tes notifications ?</h2><p class="onb-sub">Tu recevras un e-mail à chaque nouveau prospect et à chaque réservation sur ta page. Vérifie bien l'adresse : l'e-mail de connexion n'est pas toujours valide.</p>
@@ -2565,6 +2567,7 @@ function coachSteps(){
     {ok:touched,t:"Mettre tes vraies prestations et tes prix",why:"Ils pré-remplissent chaque rendez-vous et servent à calculer ton chiffre d'affaires et tes KPI.",go:'profil',btn:"Mon profil"},
     {ok:!!googleConnected,t:"Connecter ton Google Agenda",why:"Tes rendez-vous se synchronisent dans les deux sens. Attention : seuls les événements « RDV - … » deviennent des clients ; les autres restent en gris et sont à convertir un par un (clique dessus dans l'agenda).",go:'agenda',btn:"Agenda"},
     {ok:(D.interventions||[]).length>0,t:"Ajouter ton premier rendez-vous dans l'agenda",why:"Chaque rendez-vous ajouté dans l'agenda apparaît tout seul dans « Mes rendez-vous » : c'est lui qui alimente ton CA, tes KPI et tes rappels SMS.",go:'agenda',btn:"Agenda"},
+    {ok:!!((st.phone_pro||'').trim()),t:"Renseigner ton numéro de téléphone pour tes clients",why:"Il est ajouté à tes SMS de rappel et de relance : tes clients peuvent t'appeler ou annuler s'ils ne sont plus disponibles.",go:'sms',btn:"SMS"},
     {ok:!!(D.booking&&D.booking.enabled),t:"Activer ta page de réservation en ligne",why:"Tes prospects réservent eux-mêmes un créneau (lien à mettre dans tes SMS) : tu n'as plus besoin de les appeler pour fixer le rendez-vous.",go:'booking',btn:"Réservation"},
     {ok:!!(st.booking_url&&st.review_url),t:"Remplir ton lien de prise de rendez-vous et ton lien d'avis Google",why:"Ils sont utilisés dans les SMS de relance et d'avis.",go:'sms',btn:"SMS"},
     {ok:!!(sr&&sr.status==='approuve'),t:sr&&sr.status!=='approuve'?"Nom d'expéditeur : demande en cours de validation":"Demander ton nom d'expéditeur SMS",why:"Sans nom approuvé, aucun SMS ne part chez tes clients.",go:'sms',btn:"SMS"},
@@ -2612,6 +2615,18 @@ function coachHint(key,html){
 }
 function coachDismiss(key){ try{ localStorage.setItem('ecolia_hint_'+key+'_'+currentUser.id,'1'); }catch(e){} renderPage(); }
 
+function originCardHtml(){
+  const cl=D.clients||[]; if(!cl.length) return '';
+  const rows={}, srcOf={};
+  cl.forEach(c=>{ const k=(c.source==='google_agenda'||!c.source)?'autre':c.source; srcOf[String(c.id)]=k; (rows[k]=rows[k]||{n:0,cli:0,ca:0}).n++; if(c.status==='client') rows[k].cli++; });
+  (D.interventions||[]).forEach(i=>{ const k=srcOf[String(i.client_id)]; if(k&&(i.statut||'realise')==='realise') rows[k].ca+=Number(i.montant)||0; });
+  const keys=Object.keys(rows).sort((a,b)=>rows[b].n-rows[a].n), tot=cl.length;
+  const eur=n=>Math.round(n).toLocaleString('fr-FR')+' €';
+  const label=k=>getSourceLabel(k).replace(/\s*\(.*\)\s*$/,'');
+  return `<div class="card" style="margin-top:1rem"><div class="card-head"><span class="card-title">D'où viennent tes clients</span></div>
+    <div style="padding:.25rem 1.25rem 1rem;overflow-x:auto"><table style="min-width:420px"><thead><tr><th>Origine</th><th style="text-align:right">Contacts</th><th style="text-align:right">Clients</th><th style="text-align:right">CA réalisé</th></tr></thead><tbody>${keys.map(k=>{const r=rows[k],pc=Math.round(r.n/tot*100);return `<tr><td><div style="font-weight:600">${label(k)}</div><div style="height:5px;background:var(--bg-tertiary);border-radius:4px;margin-top:5px;max-width:220px"><div style="height:5px;width:${pc}%;background:var(--blue);border-radius:4px"></div></div></td><td style="text-align:right">${r.n} <span style="color:var(--text-tertiary);font-size:11.5px">${pc}%</span></td><td style="text-align:right">${r.cli}</td><td style="text-align:right">${eur(r.ca)}</td></tr>`;}).join('')}</tbody></table>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:8px;line-height:1.4">« Autre / inconnu » = origine non renseignée : ouvre la fiche du client pour la corriger. Pour tes nouveaux clients, l'origine se choisit dans l'agenda.</div></div></div>`;
+}
 function pageDashboard(){
   const now = new Date();
   const tCA = getTotalCA();
@@ -2747,7 +2762,7 @@ function pageDashboard(){
         }).join('')+
       '</tbody></table>';
     })()}
-  </div>`;
+  </div>${originCardHtml()}`;
 }
 
 // ═══════════════════════════════════
@@ -3518,6 +3533,7 @@ function mIntervention(){
                 <div class="field" style="margin-bottom:0"><label>Nom / Prénom *</label><input value="${S.form.newClientName||''}" oninput="S.form.newClientName=this.value" onchange="S.form.newClientName=this.value;$('modal-content').innerHTML=mIntervention()" placeholder="ex: Marie Dupont"></div>
                 <div class="field" style="margin-bottom:0"><label>Téléphone</label><input value="${S.form.newClientPhone||''}" oninput="S.form.newClientPhone=this.value" placeholder="06 12 34 56 78"></div>
               </div>
+              <div class="field" style="margin:10px 0 0"><label>D'où vient ce client ? *</label><select onchange="S.form.newClientSource=this.value" style="width:100%;padding:8px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;background:var(--bg-primary)"><option value="">— Choisir —</option>${SOURCES.map(x=>`<option value="${x.v}"${S.form.newClientSource===x.v?' selected':''}>${x.l}</option>`).join('')}</select></div>
               ${dup?`<div style="margin-top:10px;padding:8px 10px;background:#FFF4E5;border-radius:8px;font-size:12px;color:#8A4B00">⚠️ Un client « ${dup.name} » existe déjà. <span style="font-weight:600;text-decoration:underline;cursor:pointer" onclick="pickIntervClient('${dup.id}')">Utiliser ce client</span></div>`:''}
             </div>`;
           })():(()=>{
@@ -3659,12 +3675,13 @@ async function saveIntervention(){
 
   if(S.form.newClient || S.form.clientId==='nouveau'){
     if(!S.form.newClientName?.trim()){ alert('Nom du client requis.'); return; }
+    if(!S.form.newClientSource){ alert("Indique d'où vient ce client (Meta Ads, bouche-à-oreille, site internet…) : ça te permet de suivre ce qui marche."); return; }
     // Create new client
     const{data,error}=await sb.from('clients').insert({
       user_id:currentUser.id,
       name:S.form.newClientName.trim(),
       phone:S.form.newClientPhone||null,
-      ca:0, status:'new', type_client:'particulier', source:'autre'
+      ca:0, status:'new', type_client:'particulier', source:S.form.newClientSource||'autre'
     }).select().single();
     if(error){alert('Erreur création client: '+error.message);return;}
     if(data){ D.clients.push(data); clientId=data.id; clientName=data.name; }
@@ -4182,18 +4199,18 @@ function kpiLegacyHtml(){
 ICONS.sms=`<svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7.3c0 2.4-2.7 4.4-6 4.4-.7 0-1.3-.1-1.9-.2L3 12.8l.8-2.3C2.7 9.7 2 8.6 2 7.3 2 4.9 4.7 3 8 3s6 1.9 6 4.3z"/></svg>`;
 // (les textes par défaut doivent rester identiques à ceux du moteur : supabase/functions/sms-engine/index.ts)
 const SMX_KINDS=[
-  {k:'lead_confirm',grp:'Nouveau prospect',title:'Confirmation de la demande',when:'Tout de suite après le formulaire',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, merci pour votre demande ! Réservez votre créneau : {lien_rdv} - {entreprise}'},
-  {k:'lead_6h',grp:'Nouveau prospect',title:'Lien pour prendre rendez-vous',when:'6 h après le formulaire (si pas de RDV)',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, réservez votre créneau en 1 minute : {lien_rdv} - {entreprise}'},
-  {k:'lead_promo',grp:'Nouveau prospect',title:'Relance avec code promo',when:'24 h après le 1er SMS (si toujours pas de RDV)',vars:['prenom','entreprise','lien_rdv','code_promo'],def:'{prenom}, -10% sur votre 1ère prestation avec le code {code_promo} ! Réservez : {lien_rdv} - {entreprise}'},
-  {k:'reminder_72h',grp:'Rendez-vous',title:'Rappel 3 jours avant',when:'72 h avant le rendez-vous',vars:['prenom','entreprise','date','heure','adresse'],def:'Rappel : votre rendez-vous avec {entreprise} est prévu {date} à {heure}. À bientôt !'},
-  {k:'reminder_24h',grp:'Rendez-vous',title:'Rappel la veille',when:'24 h avant le rendez-vous',vars:['prenom','entreprise','date','heure','adresse'],def:'Rappel : rendez-vous demain à {heure} avec {entreprise}. Adresse : {adresse}. À demain !'},
+  {k:'lead_confirm',grp:'Nouveau prospect',title:'Confirmation de la demande',when:'Tout de suite après le formulaire',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, merci pour votre demande ! Réservez ici : {lien_rdv} - {entreprise}'},
+  {k:'lead_6h',grp:'Nouveau prospect',title:'Lien pour prendre rendez-vous',when:'6 h après le formulaire (si pas de RDV)',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, réservez en 1 minute : {lien_rdv} - {entreprise}'},
+  {k:'lead_promo',grp:'Nouveau prospect',title:'Relance avec code promo',when:'24 h après le 1er SMS (si toujours pas de RDV)',vars:['prenom','entreprise','lien_rdv','code_promo'],def:'{prenom}, -10% sur votre 1ère prestation (code {code_promo}) : {lien_rdv} - {entreprise}'},
+  {k:'reminder_72h',grp:'Rendez-vous',title:'Rappel 3 jours avant',when:'72 h avant le rendez-vous',vars:['prenom','entreprise','date','heure','adresse','telephone'],def:'Rappel : votre rendez-vous avec {entreprise} est prévu {date} à {heure}. À bientôt !'},
+  {k:'reminder_24h',grp:'Rendez-vous',title:'Rappel la veille',when:'24 h avant le rendez-vous',vars:['prenom','entreprise','date','heure','adresse','telephone'],def:'Rappel : rendez-vous demain à {heure} avec {entreprise}. Adresse : {adresse}. À demain !'},
   {k:'review',manual:true,grp:'Après la prestation',title:'Demande d\'avis Google (manuelle)',when:'Jamais automatique : tu l\'envoies toi-même avec le bouton « ⭐ Demander un avis » (Mes rendez-vous / Agenda)',vars:['prenom','entreprise','lien_avis'],def:'Merci {prenom} ! Votre avis compte beaucoup pour {entreprise} : {lien_avis}'},
 ];
-const SMX_VARNAMES={prenom:'Prénom',entreprise:'Entreprise',lien_rdv:'Lien RDV',code_promo:'Code promo',lien_avis:'Lien avis',date:'Date du RDV',heure:'Heure du RDV',adresse:'Adresse'};
+const SMX_VARNAMES={telephone:'Mon téléphone',prenom:'Prénom',entreprise:'Entreprise',lien_rdv:'Lien RDV',code_promo:'Code promo',lien_avis:'Lien avis',date:'Date du RDV',heure:'Heure du RDV',adresse:'Adresse'};
 const SMX_REASONS={rdv_pris:'RDV pris',statut_client:'Devenu client',statut_non_qualifie:'Non qualifié',rdv_supprime:'RDV supprimé',rdv_non_planifie:'RDV modifié',rdv_non_realise:'RDV non réalisé',sms_desactive:'SMS désactivé',pas_de_compte_sms:'Pas d\'abonnement',lien_rdv_manquant:'Lien de RDV manquant',lien_avis_manquant:'Lien d\'avis manquant',code_promo_manquant:'Code promo manquant',credits_epuises:'Plus de SMS',numero_invalide:'Numéro invalide',numero_test_invalide:'Numéro de test invalide',client_introuvable:'Client introuvable',test:'Test',avis_manuel:'Avis : passé en manuel',ne_plus_contacter:'Désinscrit des SMS',campagne_annulee:'Campagne annulée',expediteur_non_approuve:'Nom d\'expéditeur pas encore approuvé'};
 const SMX_GSM="@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
 const SMX_MAP={'’':"'",'‘':"'",'“':'"','”':'"','«':'"','»':'"','–':'-','—':'-','…':'...','ê':'e','â':'a','î':'i','ô':'o','û':'u','ë':'e','ï':'i','œ':'oe','À':'A','Â':'A','Ê':'E','È':'E','Î':'I','Ô':'O','Ù':'U','Û':'U'};
-function smxGsm(t){ return t.replace(/[\s\S]/gu,c=>SMX_MAP[c]??c); }
+function smxGsm(t){ return t.replace(/[\s\S]/gu,c=>{ if(SMX_MAP[c]!==undefined) return SMX_MAP[c]; if(SMX_GSM.includes(c)||'^{}\\[~]|€'.includes(c)) return c; for(const f of ['NFD','NFKD']){ const b=c.normalize(f).replace(/[̀-ͯ]/g,''); if(b!==c&&[...b].every(x=>SMX_GSM.includes(x))) return b; } return c; }); }
 function smxSegments(t){ let u=0,g=true; for(const c of t){ if(SMX_GSM.includes(c)) u++; else if('^{}\\[~]|€'.includes(c)) u+=2; else {g=false;break;} } if(g) return u<=160?1:Math.ceil(u/153); const n=[...t].length; return n<=70?1:Math.ceil(n/67); }
 function smxCleanSender(v){ return String(v||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]/g,'').slice(0,11); }
 
@@ -4456,14 +4473,22 @@ async function smxAskReview(id){
 function smxTpl(k){ const d=SMX_KINDS.find(x=>x.k===k); const t=(S.sms.templates||{})[k]||{}; return {enabled:t.enabled!==undefined?t.enabled:true, body:(t.body&&t.body.trim())?t.body:d.def}; }
 function smxPreview(k){
   const s=S.sms.settings||{};
-  const v={prenom:'Marie',nom:'Marie Dupont',entreprise:s.entreprise||'Mon entreprise',lien_rdv:s.booking_url||'https://…',lien_avis:s.review_url||'https://…',code_promo:s.promo_code||'CODE10',date:'jeudi 15 octobre',heure:'10h00',adresse:'12 rue des Lilas'};
-  const txt=smxGsm(smxTpl(k).body.replace(/\{(\w+)\}/g,(m,x)=>v[x]??'')).replace(/\s+/g,' ').trim();
+  const v={prenom:'Marie',nom:'Marie Dupont',entreprise:s.entreprise||'Mon entreprise',lien_rdv:s.booking_url||'https://…',lien_avis:s.review_url||'https://…',code_promo:s.promo_code||'CODE10',date:'jeudi 15 octobre',heure:'10h00',adresse:'12 rue des Lilas',telephone:(s.phone_pro||'').trim()};
+  let body=smxTpl(k).body;
+  const ph=(s.phone_pro||'').trim();   // même règle que le moteur : numéro ajouté sans jamais coûter un SMS de plus
+  if(ph&&!body.includes('{telephone}')&&['reminder_72h','reminder_24h','lead_confirm','lead_6h','lead_promo'].includes(k)){
+    const vs=k.startsWith('reminder_')?[' Pour annuler ou modifier : '+ph,' Annuler : '+ph]:[' Une question ? '+ph,' Tel : '+ph];
+    const base=smxGsm(body.replace(/\{(\w+)\}/g,(m,x)=>v[x]??'')).replace(/\s+/g,' ').trim(), bs=smxSegments(base);
+    const ok=vs.find(x=>smxSegments(smxGsm(base+x))<=bs); if(ok) body=body+ok;
+  }
+  const txt=smxGsm(body.replace(/\{(\w+)\}/g,(m,x)=>v[x]??'')).replace(/\s+/g,' ').trim();
   return {txt,seg:smxSegments(txt),len:[...txt].length};
 }
 function smxMissing(k){
   const body=smxTpl(k).body, s=S.sms.settings||{}, need=[];
   if(body.includes('{lien_rdv}')&&!(s.booking_url||'').trim()) need.push('ton lien de prise de rendez-vous');
   if(body.includes('{lien_avis}')&&!(s.review_url||'').trim()) need.push('ton lien d\'avis Google');
+  if(body.includes('{telephone}')&&!(s.phone_pro||'').trim()) need.push('ton numéro de téléphone');
   if(body.includes('{code_promo}')&&!(s.promo_code||'').trim()) need.push('ton code promo');
   return need;
 }
@@ -4646,6 +4671,7 @@ function pageSms(){
       </div>
       <div class="form-grid2">
         <div class="field"><label>Code promo offert aux prospects</label><input value="${(st2.promo_code||'').replace(/"/g,'&quot;')}" oninput="smxSetField('promo_code',this.value)" placeholder="ex: BIENVENUE10"></div>
+        <div class="field"><label>Ton numéro de téléphone <span style="font-weight:400;color:var(--text-secondary)">(ajouté à tes SMS)</span></label><input type="tel" value="${(st2.phone_pro||'').replace(/"/g,'&quot;')}" oninput="smxSetField('phone_pro',this.value)" placeholder="06 12 34 56 78"><div style="margin-top:5px;font-size:12px;color:var(--text-secondary);line-height:1.4">Il est ajouté à la fin de tes SMS de rappel (« Pour annuler ou modifier : … ») et de tes relances, pour que tes clients puissent t'appeler.</div></div>
         <div class="field"><label>Pays des numéros de téléphone</label><select onchange="smxSetField('country_prefix',this.value)"><option value="33"${(st2.country_prefix||'33')==='33'?' selected':''}>France (+33)</option><option value="32"${st2.country_prefix==='32'?' selected':''}>Belgique (+32)</option></select></div>
       </div>
       <div style="font-size:12px;color:var(--text-secondary)">Tes modifications s'enregistrent automatiquement.</div>
