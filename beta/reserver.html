@@ -72,7 +72,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 /* prestations */
 .pz{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:640px){.pz{grid-template-columns:1fr 1fr}}
-.pc{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:12px 14px;font:inherit;cursor:pointer}
+.pc{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:12px 14px;font:inherit;cursor:pointer}
 .pc:hover{border-color:var(--accent)}
 .pc.sel{border-color:var(--accent);background:var(--accent-soft)}
 .pc .t{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-weight:700}
