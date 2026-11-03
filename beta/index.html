@@ -2254,12 +2254,47 @@ async function onbSaveBooking(){
 }
 function onbFinish(page){ try{ localStorage.setItem(onbKey(),'1'); }catch(e){} onbClose(); $('sidebar')&&($('sidebar').innerHTML=renderSidebar()); nav(page||'dashboard'); }
 
+// ── Notifications par e-mail (nouveau prospect, nouvelle réservation) ──
+async function loadNotif(){
+  if(VIEW_ONLY||!currentUser) return;
+  try{
+    const r=await sb.from('notif_prefs').select('*').eq('user_id',currentUser.id).maybeSingle();
+    D.notif=(r&&r.data)||null;
+    if(r&&!r.error&&!r.data){   // première ouverture du CRM beta : les e-mails sont activés (l'élève peut les couper dans Mon profil)
+      const row={user_id:currentUser.id,email:null,new_lead:true,new_booking:true,updated_at:new Date().toISOString()};
+      const w=await sb.from('notif_prefs').upsert(row,{onConflict:'user_id'}); if(!w.error) D.notif=row;
+    }
+    if(S.page==='profil') renderPage();
+  }catch(e){ console.error(e); }
+}
+function notifCardHtml(){
+  const n=D.notif||{}, e=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const mail=n.email||'', lead=n.new_lead!==false, book=n.new_booking!==false, login=(currentUser&&currentUser.email)||'';
+  const row=(id,on,label)=>`<label style="display:flex;gap:8px;align-items:center;font-size:14px;padding:5px 0;cursor:pointer"><input type="checkbox" id="${id}" ${on?'checked':''} onchange="notifSave()"> ${label}</label>`;
+  return `<div class="card"><div class="card-head"><span class="card-title">Notifications par e-mail</span><span id="notif-ind" style="font-size:12px;color:var(--green-mid)"></span></div>
+    <div style="padding:1rem"><div style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px">Reçois un e-mail dès qu'un prospect remplit ton formulaire Facebook ou qu'un client réserve un créneau sur ta page. Pense à vérifier tes courriers indésirables la première fois.</div>
+      <div class="field"><label>Adresse de réception</label><input id="notif-email" type="email" value="${e(mail)}" placeholder="${e(login)}" onchange="notifSave()"><div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px">Laisse vide pour utiliser l'adresse de ta connexion${login?' ('+e(login)+')':''}.</div></div>
+      ${row('notif-lead',lead,'Nouveau prospect (formulaire Facebook)')}${row('notif-book',book,'Nouvelle réservation en ligne')}
+    </div></div>`;
+}
+async function notifSave(){
+  const ind=document.getElementById('notif-ind'), say=(t,c)=>{ if(ind){ ind.textContent=t; ind.style.color=c||'var(--green-mid)'; } };
+  const email=(document.getElementById('notif-email').value||'').trim();
+  if(email&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ say('⚠️ Adresse e-mail invalide','var(--red-mid)'); return; }
+  const row={user_id:currentUser.id,email:email||null,new_lead:document.getElementById('notif-lead').checked,new_booking:document.getElementById('notif-book').checked,updated_at:new Date().toISOString()};
+  say('Enregistrement…','var(--text-secondary)');
+  const{error}=await sb.from('notif_prefs').upsert(row,{onConflict:'user_id'});
+  if(error){ say('⚠️ Non enregistré : '+error.message,'var(--red-mid)'); return; }
+  D.notif=row; say('✅ Enregistré');
+}
+
 function renderApp(){
   $('root').innerHTML=`<div class="app-layout"><nav class="sidebar" id="sidebar"></nav><main class="main" id="main"></main></div>`;
   const mn=$('mobile-nav');if(mn)mn.style.display='';
   render();
   loadSms().then(()=>{ const sd=$('sidebar'); if(sd) sd.innerHTML=renderSidebar(); onbMaybeStart(); });
   smxHandleReturn();
+  loadNotif();
   // Init Google API
   initGoogleAPI();
   tryReconnectGoogleCalendar();
@@ -5378,6 +5413,7 @@ function pageProfil(){
       <div class="field"><label>Nom de l'entreprise</label><input id="p-nom" value="${p.nom_entreprise||''}" placeholder="ex: Detailing Pro Normandie"></div>
     </div>
   </div>
+  ${notifCardHtml()}
   <div class="card"><div class="card-head"><span class="card-title">Mes tarifs (catalogue de prestations)</span><button class="btn sm" onclick="openModal('prestation')">+ Ajouter</button></div>
     <table><thead><tr><th>Prestation</th><th>Description</th><th class="td-right">Durée</th><th class="td-right">Prix HT</th><th></th></tr></thead><tbody>
     ${D.prestations.map(p=>`<tr>
