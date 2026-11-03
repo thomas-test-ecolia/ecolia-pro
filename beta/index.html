@@ -548,6 +548,24 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 #view-only-note{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:99999;display:flex;gap:14px;align-items:center;background:#1D1D1F;color:#fff;border-radius:100px;padding:9px 18px;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,.3);max-width:calc(100vw - 24px)}
 #view-only-note a{color:#9CCBFF;text-decoration:none;font-weight:600;white-space:nowrap}
 #view-only-note.flash{background:#B3261E}
+#onb{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+#onb .onb-box{background:var(--bg-primary);border-radius:18px;max-width:580px;width:100%;max-height:92vh;overflow:auto;padding:26px 26px 22px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+#onb h2{font-size:21px;margin:6px 0 6px;letter-spacing:-.2px}
+#onb .onb-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.55;margin:0 0 16px}
+#onb .onb-note{font-size:12.5px;color:var(--text-secondary);line-height:1.5;margin:6px 0 0}
+#onb .onb-top{display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:6px}
+#onb .onb-bar{height:5px;background:var(--bg-tertiary);border-radius:5px;overflow:hidden;margin-bottom:12px}
+#onb .onb-bar div{height:5px;background:var(--blue);border-radius:5px;transition:width .3s}
+#onb .onb-link{color:var(--blue);cursor:pointer;font-size:13px;font-weight:600}
+#onb .onb-row{display:grid;grid-template-columns:1fr 78px 78px 22px;gap:6px;align-items:center;margin-bottom:6px}
+#onb .onb-row input{width:100%;padding:8px 9px;border:0.5px solid var(--gray-border-mid);border-radius:8px;font-size:14px;box-sizing:border-box;font-family:inherit}
+#onb .onb-head{font-size:11.5px;color:var(--text-secondary);font-weight:600}
+#onb .onb-x{color:var(--red-mid);cursor:pointer;font-size:20px;text-align:center}
+#onb .onb-days{display:flex;gap:6px;flex-wrap:wrap}
+#onb .onb-day{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border:0.5px solid var(--gray-border-mid);border-radius:100px;font-size:13px;cursor:pointer}
+#onb .onb-linkbox{background:var(--bg-secondary);border-radius:12px;padding:12px 14px;margin:6px 0 10px}
+#onb .onb-err{background:#FDECEA;color:#B3261E;border-radius:9px;padding:9px 12px;font-size:13px;margin-top:10px}
+#onb .onb-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 </style>
 </head>
 <body>
@@ -2122,11 +2140,125 @@ async function loadAllData(){
 // ═══════════════════════════════════
 // APP
 // ═══════════════════════════════════
+// ═══════════════════════════════════
+// QUESTIONNAIRE DE PREMIÈRE CONNEXION : nom d'entreprise, prestations, réservation en ligne (les SMS restent facultatifs, hors questionnaire)
+// ═══════════════════════════════════
+const _onbE=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+function onbKey(){ return 'ecolia_onb_done_'+(currentUser&&currentUser.id); }
+function onbCompanyName(){ return ((D.profil&&D.profil.nom_entreprise)||(S.sms&&S.sms.settings&&S.sms.settings.entreprise)||(D.booking&&D.booking.title)||'').trim(); }
+function onbMaybeStart(){
+  if(VIEW_ONLY||!currentUser||S.onb) return;
+  try{ if(localStorage.getItem(onbKey())==='1'||sessionStorage.getItem(onbKey())==='1') return; }catch(e){}
+  // un nom d'entreprise déjà connu ailleurs (réglages SMS, page de réservation) est repris sur cet appareil au lieu d'être redemandé
+  const known=onbCompanyName();
+  if(known&&!((D.profil&&D.profil.nom_entreprise)||'').trim()){ D.profil=D.profil||{}; D.profil.nom_entreprise=known; try{ localStorage.setItem('ecolia_profil_'+currentUser.id,JSON.stringify(D.profil)); }catch(e){} }
+  const steps=[];
+  if(!known) steps.push('company');
+  if(!catalogPersonalised()) steps.push('prest');
+  if(!(D.booking&&D.booking.enabled)) steps.push('booking');
+  if(!steps.length) return;
+  steps.push('done');
+  S.onb={steps,i:0,err:'',prest:(D.prestations||[]).map(p=>({id:p.id,nom:p.nom||'',prix:p.prix||'',duree:p.duree||60,del:false})),zone:(D.booking&&D.booking.zone)||''};
+  onbRender();
+}
+function onbLater(){ try{ sessionStorage.setItem(onbKey(),'1'); }catch(e){} onbClose(); }
+function onbClose(){ const el=document.getElementById('onb'); if(el) el.remove(); S.onb=null; }
+function onbErr(m){ if(S.onb){ S.onb.err=m; } const e=document.getElementById('onb-err'); if(e){ e.textContent=m; e.style.display=m?'block':'none'; } }
+function onbNext(){ S.onb.err=''; S.onb.i++; onbRender(); }
+function onbRender(){
+  const o=S.onb; if(!o) return;
+  let el=document.getElementById('onb'); if(!el){ el=document.createElement('div'); el.id='onb'; document.body.appendChild(el); }
+  const k=o.steps[o.i], total=o.steps.length-1;
+  const inp=(id,label,val,ph,type)=>`<div style="margin-bottom:12px"><label style="display:block;font-size:12.5px;font-weight:600;margin-bottom:5px">${label}</label><input id="${id}" type="${type||'text'}" value="${_onbE(val)}" placeholder="${_onbE(ph||'')}" style="width:100%;padding:10px 12px;border:0.5px solid var(--gray-border-mid);border-radius:9px;font-size:15px;box-sizing:border-box;font-family:inherit"></div>`;
+  let body='';
+  if(k==='company'){
+    body=`<h2>Comment s'appelle ton entreprise ?</h2><p class="onb-sub">Ce nom apparaît sur tes SMS, ta page de réservation, tes devis et tes factures.</p>
+      ${inp('onb-name','Nom de ton entreprise',onbCompanyName(),'ex : Clean Auto 76')}
+      ${inp('onb-phone','Téléphone professionnel <span style="font-weight:400;color:var(--text-secondary)">(facultatif)</span>',(D.profil&&D.profil.telephone)||'','06 12 34 56 78','tel')}
+      ${inp('onb-zone','Zone où tu interviens <span style="font-weight:400;color:var(--text-secondary)">(facultatif)</span>',o.zone,'ex : Rouen et 20 km autour')}`;
+  } else if(k==='prest'){
+    body=`<h2>Tes prestations et tes prix</h2><p class="onb-sub">Garde seulement ce que tu vends vraiment : elles pré-remplissent tes rendez-vous et servent à calculer ton chiffre d'affaires. Tu pourras les modifier plus tard dans « Mon profil ».</p>
+      <div class="onb-rows"><div class="onb-row onb-head"><span>Prestation</span><span>Prix (€)</span><span>Durée (min)</span><span></span></div>
+      ${o.prest.map((r,i)=>r.del?'':`<div class="onb-row"><input value="${_onbE(r.nom)}" placeholder="ex : Nettoyage complet" oninput="S.onb.prest[${i}].nom=this.value"><input type="number" min="0" step="1" value="${_onbE(r.prix)}" placeholder="129" oninput="S.onb.prest[${i}].prix=this.value"><input type="number" min="10" step="5" value="${_onbE(r.duree)}" oninput="S.onb.prest[${i}].duree=this.value"><span class="onb-x" onclick="onbDelPrest(${i})" title="Retirer">×</span></div>`).join('')}</div>
+      <span class="onb-link" onclick="onbAddPrest()">+ Ajouter une prestation</span>`;
+  } else if(k==='booking'){
+    const b=D.booking||{}, w=b.windows||{}, ds=[1,2,3,4,5,6,7].map(d=>({d,on:b.windows?!!w[d]:d<=6}));
+    const first=Object.values(w)[0], from=first?first[0][0]:'09:00', to=first?first[first.length-1][1]:'18:00';
+    body=`<h2>Ta page de réservation en ligne</h2><p class="onb-sub">Tes prospects choisissent eux-mêmes un créneau : le rendez-vous arrive directement dans ton agenda, sans que tu aies à les rappeler. <strong>Gratuit.</strong></p>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:6px">Jours où tu prends des rendez-vous</div>
+      <div class="onb-days">${ds.map(x=>`<label class="onb-day"><input type="checkbox" id="onb-d${x.d}" ${x.on?'checked':''}> ${BK_DAYS[x.d-1].slice(0,3)}</label>`).join('')}</div>
+      <div style="display:flex;gap:10px;margin:10px 0 12px"><div style="flex:1">${inp('onb-from','De',from,'','time')}</div><div style="flex:1">${inp('onb-to','À',to,'','time')}</div></div>
+      ${inp('onb-slug','Adresse de ta page',b.slug||bkSlugify(onbCompanyName()),'ex : clean-auto-76')}
+      <p class="onb-note">Tu pourras ajuster les horaires précis plus tard dans « Réservation en ligne ».</p>`;
+  } else {
+    const link=(D.booking&&D.booking.enabled)?bkLink(D.booking.slug):'';
+    body=`<div style="text-align:center;font-size:42px;margin-bottom:6px">🎉</div><h2 style="text-align:center">Ton CRM est prêt</h2>
+      <p class="onb-sub" style="text-align:center">Les informations essentielles sont enregistrées.</p>
+      ${link?`<div class="onb-linkbox"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Ton lien de réservation, à mettre dans ta bio Instagram, tes publications et tes messages :</div><div style="font-weight:600;word-break:break-all;font-size:13.5px">${_onbE(link)}</div><button class="btn sm" style="margin-top:8px" onclick="bkCopy()">Copier le lien</button></div>`:''}
+      <p class="onb-note" style="text-align:center">Les SMS automatiques sont facultatifs : tu les configures quand tu veux, dans le menu « SMS automatiques ».</p>`;
+  }
+  const last=k==='done';
+  const actions=last?`<button class="btn primary" onclick="onbFinish('dashboard')">Découvrir mon CRM</button>`
+    :`${k==='booking'?`<button class="btn" onclick="onbSkipBooking()">Passer</button>`:''}<button class="btn primary" onclick="onb${k==='company'?'SaveCompany':k==='prest'?'SavePrest':'SaveBooking'}()">${k==='booking'?'Activer ma page':'Continuer'}</button>`;
+  el.innerHTML=`<div class="onb-box">${last?'':`<div class="onb-top"><span>Étape ${o.i+1} sur ${total}</span><span class="onb-link" onclick="onbLater()">Plus tard</span></div><div class="onb-bar"><div style="width:${Math.round((o.i)/total*100)}%"></div></div>`}
+    ${body}<div id="onb-err" class="onb-err" style="display:${o.err?'block':'none'}">${_onbE(o.err)}</div><div class="onb-actions">${actions}</div></div>`;
+}
+function onbAddPrest(){ S.onb.prest.push({id:null,nom:'',prix:'',duree:60,del:false}); onbRender(); const r=document.querySelectorAll('#onb .onb-row:not(.onb-head)'); const l=r[r.length-1]; if(l) l.querySelector('input').focus(); }
+function onbDelPrest(i){ const r=S.onb.prest[i]; if(r.id) r.del=true; else S.onb.prest.splice(i,1); onbRender(); }
+async function onbSaveCompany(){
+  const name=document.getElementById('onb-name').value.trim(), phone=document.getElementById('onb-phone').value.trim(), zone=document.getElementById('onb-zone').value.trim();
+  if(name.length<2){ onbErr("Indique le nom de ton entreprise."); return; }
+  D.profil=D.profil||{}; D.profil.nom_entreprise=name; if(phone&&!D.profil.telephone) D.profil.telephone=phone;
+  try{ localStorage.setItem('ecolia_profil_'+currentUser.id,JSON.stringify(D.profil)); }catch(e){}
+  S.onb.zone=zone;
+  if(S.sms){   // même nom dans les réglages SMS (les autres réglages sont conservés)
+    const s=S.sms.settings||{};
+    const row={user_id:currentUser.id,entreprise:name,sender:smxCleanSender(s.sender||name)||null,booking_url:s.booking_url||null,review_url:s.review_url||null,promo_code:s.promo_code||null,phone_pro:s.phone_pro||phone||null,country_prefix:s.country_prefix||'33'};
+    const{error}=await sb.from('sms_settings').upsert(row,{onConflict:'user_id'});
+    if(error){ onbErr('Erreur : '+error.message); return; }
+    S.sms.settings={...s,...row};
+  }
+  onbNext();
+}
+async function onbSavePrest(){
+  const keep=S.onb.prest.filter(r=>!r.del&&(r.nom||'').trim());
+  if(!keep.length||keep.some(r=>!(parseFloat(r.prix)>0))){ onbErr("Ajoute au moins une prestation, avec son prix."); return; }
+  try{
+    for(const r of S.onb.prest.filter(r=>r.del&&r.id)){ const{error}=await sb.from('prestations').delete().eq('id',r.id); if(error) throw error; D.prestations=D.prestations.filter(p=>String(p.id)!==String(r.id)); }
+    for(const r of keep){
+      const f={nom:r.nom.trim(),prix:parseFloat(r.prix)||0,duree:parseInt(r.duree)||60};
+      if(r.id){ const{error}=await sb.from('prestations').update(f).eq('id',r.id); if(error) throw error; const p=D.prestations.find(p=>String(p.id)===String(r.id)); if(p) Object.assign(p,f); }
+      else { const{data,error}=await sb.from('prestations').insert({user_id:currentUser.id,description:'',...f}).select().single(); if(error) throw error; if(data){ D.prestations.push(data); r.id=data.id; } }
+    }
+  }catch(e){ onbErr('Erreur : '+(e.message||e)); return; }
+  S.onb.prest=S.onb.prest.filter(r=>!r.del);
+  onbNext();
+}
+function onbSkipBooking(){ onbNext(); }
+async function onbSaveBooking(){
+  const slug=document.getElementById('onb-slug').value.trim().toLowerCase(), a=document.getElementById('onb-from').value, z=document.getElementById('onb-to').value;
+  const days=[1,2,3,4,5,6,7].filter(d=>document.getElementById('onb-d'+d).checked);
+  if(!/^[a-z0-9][a-z0-9-]{2,39}$/.test(slug)){ onbErr("L'adresse doit faire 3 à 40 caractères (lettres minuscules, chiffres, tirets)."); return; }
+  if(!days.length){ onbErr("Coche au moins un jour."); return; }
+  if(!a||!z||z<=a){ onbErr("Les horaires ne sont pas valides : l'heure de fin doit être après l'heure de début."); return; }
+  const{data:free,error:e0}=await sb.rpc('booking_slug_free',{p_slug:slug});
+  if(e0){ onbErr('Erreur : '+e0.message); return; }
+  if(free===false){ onbErr("Cette adresse est déjà prise : choisis-en une autre."); return; }
+  const old=D.booking||{}, windows={}; days.forEach(d=>{ windows[d]=[[a,z]]; });
+  const row={user_id:currentUser.id,slug,enabled:true,title:onbCompanyName()||old.title||null,zone:(S.onb.zone||old.zone||'').trim()||null,message:old.message||null,windows,capacity:old.capacity||1,min_notice_hours:old.min_notice_hours!=null?old.min_notice_hours:12,max_days_ahead:old.max_days_ahead||30,days_off:old.days_off||[],updated_at:new Date().toISOString()};
+  const{error}=await sb.from('booking_settings').upsert(row,{onConflict:'user_id'});
+  if(error){ onbErr('Erreur : '+error.message); return; }
+  D.booking=row; S.bk=null;
+  if(S.sms){ const s=S.sms.settings||{}; if(!(s.booking_url||'').trim()){ S.sms.settings={...s,booking_url:bkLink(slug)}; try{ await smxSaveSettings(); }catch(e){} } }   // le lien sert aussi dans les SMS
+  onbNext();
+}
+function onbFinish(page){ try{ localStorage.setItem(onbKey(),'1'); }catch(e){} onbClose(); $('sidebar')&&($('sidebar').innerHTML=renderSidebar()); nav(page||'dashboard'); }
+
 function renderApp(){
   $('root').innerHTML=`<div class="app-layout"><nav class="sidebar" id="sidebar"></nav><main class="main" id="main"></main></div>`;
   const mn=$('mobile-nav');if(mn)mn.style.display='';
   render();
-  loadSms().then(()=>{ const sd=$('sidebar'); if(sd) sd.innerHTML=renderSidebar(); });
+  loadSms().then(()=>{ const sd=$('sidebar'); if(sd) sd.innerHTML=renderSidebar(); onbMaybeStart(); });
   smxHandleReturn();
   // Init Google API
   initGoogleAPI();
@@ -2716,7 +2848,7 @@ function pageClientDetail(clientId){
   ${tab==='notes'?`
   <div class="card" style="padding:1rem">
     <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Notes sur ce prospect / client (appels, remarques...)</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;color:var(--text-secondary)">Notes</span><span id="note-save-indicator" style="font-size:11px;color:var(--green-mid);opacity:0.4;transition:opacity 0.5s">${(()=>{try{const nd=JSON.parse(localStorage.getItem('ecolia_notedates_'+currentUser.id)||'{}');const d=nd[c.id];return d?'✅ '+new Date(d).toLocaleDateString('fr-FR')+' à '+new Date(d).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';} catch(e){return '';}})()}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${[['📞','Appelé, pas répondu'],['✉️','Messagerie laissée'],['📱','Messagerie + SMS'],['✅','Intéressé'],['❌','Pas intéressé']].map(([icon,txt])=>`<button onclick="(()=>{const a=document.getElementById('client-notes-area');if(!a)return;const d=new Date().toLocaleDateString('fr-FR')+' '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});a.value+=(a.value?'\n':'')+'['+d+'] ${icon} ${txt}';autoSaveNote('${c.id}',a.value);})()" style="padding:3px 9px;border:0.5px solid var(--gray-border-mid);border-radius:100px;font-size:11px;cursor:pointer;background:var(--bg-secondary);font-family:var(--font)">${icon} ${txt}</button>`).join('')}</div><textarea id="client-notes-area" oninput="autoSaveNote('${c.id}',this.value)" style="width:100%;min-height:200px;padding:12px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit" placeholder="Ex: Appelé le 12/04 — pas répondu. Rappeler mercredi matin. Intéressé par le forfait Premium...">${clientNotes}</textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;color:var(--text-secondary)">Notes</span><span id="note-save-indicator" style="font-size:11px;color:var(--green-mid);opacity:0.4;transition:opacity 0.5s">${(()=>{try{const nd=JSON.parse(localStorage.getItem('ecolia_notedates_'+currentUser.id)||'{}');const d=nd[c.id];return d?'✅ '+new Date(d).toLocaleDateString('fr-FR')+' à '+new Date(d).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';} catch(e){return '';}})()}</span></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${[['📞','Appelé, pas répondu'],['✉️','Messagerie laissée'],['📱','Messagerie + SMS'],['✅','Intéressé'],['❌','Pas intéressé']].map(([icon,txt])=>`<button onclick="(()=>{const a=document.getElementById('client-notes-area');if(!a)return;const d=new Date().toLocaleDateString('fr-FR')+' '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});a.value+=(a.value?'\n':'')+'['+d+'] ${icon} ${txt}';autoSaveNote('${c.id}',a.value);})()" style="padding:3px 9px;border:0.5px solid var(--gray-border-mid);border-radius:100px;font-size:11px;cursor:pointer;background:var(--bg-secondary);font-family:var(--font)">${icon} ${txt}</button>`).join('')}</div><textarea id="client-notes-area" oninput="autoSaveNote('${c.id}',this.value)" onblur="flushNote()" style="width:100%;min-height:200px;padding:12px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;line-height:1.6;resize:vertical;box-sizing:border-box;font-family:inherit" placeholder="Ex: Appelé le 12/04 — pas répondu. Rappeler mercredi matin. Intéressé par le forfait Premium...">${clientNotes}</textarea>
     <div style="margin-top:10px;border:0.5px solid var(--gray-border);border-radius:var(--radius-md);overflow:hidden"><div onclick="const f=document.getElementById('qtf-${c.id}');f.style.display=f.style.display==='none'?'block':'none'" style="padding:8px 12px;cursor:pointer;font-size:12px;font-weight:500;color:var(--blue);background:var(--blue-light)">▶ Planifier une tâche</div><div id="qtf-${c.id}" style="display:none;padding:12px;background:var(--bg-secondary)"><div style="display:grid;grid-template-columns:1fr 130px auto;gap:8px;align-items:end"><div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px">Tâche</div><input id="qtt-${c.id}" placeholder="Rappeler, Envoyer devis..." style="width:100%;padding:7px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;box-sizing:border-box;font-family:var(--font)"></div><div><div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px">Échéance</div><input id="qtd-${c.id}" type="date" value="${new Date(Date.now()+86400000).toISOString().slice(0,10)}" style="width:100%;padding:7px;border:0.5px solid var(--gray-border-mid);border-radius:var(--radius-md);font-size:13px;box-sizing:border-box"></div><button onclick="(()=>{const t=document.getElementById('qtt-${c.id}');const d=document.getElementById('qtd-${c.id}');if(!t.value.trim()){t.focus();return;}sb.from('tasks').insert({user_id:currentUser.id,client_id:'${c.id}',client_name:'${c.name.replace(/\'/g,"\'")}',titre:t.value.trim(),date:d.value||'',done:false}).select().single().then(({data})=>{if(data){if(!D.tasks)D.tasks=[];D.tasks.push(data);render();}});t.value='';})()" style="padding:7px 14px;background:var(--blue);color:white;border:none;border-radius:var(--radius-md);cursor:pointer;font-size:13px;white-space:nowrap">+ Ajouter</button></div></div></div>
   </div>`:''}
 
@@ -2758,15 +2890,52 @@ function pageClientDetail(clientId){
   </div>`:''}`;
 }
 
-let _noteTimer=null;function autoSaveNote(clientId,val){clearTimeout(_noteTimer);_noteTimer=setTimeout(()=>saveClientNote(clientId,val),2000);} async function saveClientNote(clientId,val){if(!D.clientNotesDates)D.clientNotesDates={};D.clientNotesDates[clientId]=new Date().toISOString();try{localStorage.setItem('ecolia_notedates_'+currentUser.id,JSON.stringify(D.clientNotesDates));}catch(e){}const ind=document.getElementById('note-save-indicator');if(ind){const t=new Date();ind.textContent='✅ '+t.toLocaleDateString('fr-FR')+' à '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});ind.style.opacity='1';setTimeout(()=>ind.style.opacity='0.4',3000);}   const note=val!==undefined?val:(document.getElementById('client-notes-area')?.value||'');
-
-  if(!D.clientNotes) D.clientNotes = {};
-  D.clientNotes[clientId] = note;
-  try{ await sb.from('clients').update({notes:note}).eq('id',clientId); }catch(e){ console.error(e); }
-  // Show saved feedback
-  const btn = document.querySelector('[onclick*="saveClientNote"]');
-  if(btn){ const orig=btn.textContent; btn.textContent='✅ Sauvegardé !'; setTimeout(()=>btn.textContent=orig,2000); }
+let _noteTimer=null, _notePending=null;
+function autoSaveNote(clientId,val){
+  _notePending={id:clientId,val};
+  const ind=document.getElementById('note-save-indicator'); if(ind){ ind.textContent='✏️ en cours…'; ind.style.color=''; ind.style.opacity='1'; }
+  clearTimeout(_noteTimer); _noteTimer=setTimeout(flushNote,800);
 }
+function flushNote(){
+  clearTimeout(_noteTimer); if(!_notePending) return Promise.resolve();
+  const p=_notePending; _notePending=null; return saveClientNote(p.id,p.val);
+}
+async function saveClientNote(clientId,val){
+  const note=val!==undefined?val:(document.getElementById('client-notes-area')?.value||'');
+  if(!D.clientNotes) D.clientNotes={}; D.clientNotes[clientId]=note;
+  const c=(D.clients||[]).find(x=>String(x.id)===String(clientId)); if(c) c.notes=note;   // la fiche client garde la même note que l'onglet Notes
+  let ok=false;
+  try{ const{error}=await sb.from('clients').update({notes:note}).eq('id',clientId); ok=!error; if(error) console.error(error); }catch(e){ console.error(e); }
+  const ind=document.getElementById('note-save-indicator');
+  if(ok){
+    if(!D.clientNotesDates) D.clientNotesDates={}; D.clientNotesDates[clientId]=new Date().toISOString();
+    try{ localStorage.setItem('ecolia_notedates_'+currentUser.id,JSON.stringify(D.clientNotesDates)); }catch(e){}
+    if(ind){ const t=new Date(); ind.textContent='✅ '+t.toLocaleDateString('fr-FR')+' à '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); ind.style.color=''; ind.style.opacity='1'; setTimeout(()=>{ const e2=document.getElementById('note-save-indicator'); if(e2) e2.style.opacity='0.4'; },3000); }
+  } else {
+    if(!_notePending) _notePending={id:clientId,val:note};   // on réessaie, sans écraser une frappe plus récente
+    if(ind){ ind.textContent='⚠️ Non enregistré, nouvelle tentative…'; ind.style.color='var(--red-mid,#c00)'; ind.style.opacity='1'; }
+    clearTimeout(_noteTimer); _noteTimer=setTimeout(flushNote,5000);
+  }
+}
+// Données à jour quand on revient sur l'application (téléphone <-> ordinateur) : clients, notes et tâches sont relus
+let _hiddenAt=0, _refreshBusy=false, _lastRefresh=0;
+async function refreshFromServer(){
+  if(VIEW_ONLY||_refreshBusy||!currentUser||_notePending) return;
+  if(Date.now()-_lastRefresh<15000) return;
+  _refreshBusy=true; _lastRefresh=Date.now();
+  try{
+    const [cl,tk]=await Promise.all([sb.from('clients').select('*').eq('user_id',currentUser.id), sb.from('tasks').select('*').eq('user_id',currentUser.id)]);
+    let changed=false;
+    if(cl&&cl.data&&!cl.error){ D.clients=cl.data; if(!D.clientNotes) D.clientNotes={}; cl.data.forEach(c=>{ D.clientNotes[c.id]=c.notes||''; }); changed=true; }
+    if(tk&&tk.data&&!tk.error){ D.tasks=tk.data; changed=true; }
+    const a=document.activeElement, typing=a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName), modal=document.getElementById('modal-overlay')?.classList.contains('open');
+    if(changed&&!typing&&!modal&&S.page!=='agenda'&&!_notePending) renderPage();
+  }catch(e){ console.error('refreshFromServer',e); }
+  finally{ _refreshBusy=false; }
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden){ _hiddenAt=Date.now(); flushNote(); } else if(Date.now()-_hiddenAt>15000) refreshFromServer(); });
+window.addEventListener('pagehide',()=>{ flushNote(); });
+window.addEventListener('focus',()=>{ refreshFromServer(); });
 
 function loadProfil(){ D.profil={siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#0071E3',iban:''}; try{const saved=localStorage.getItem('ecolia_profil_'+currentUser.id);if(saved)D.profil=JSON.parse(saved);}catch(e){}}function loadProfilOLD(){
   try{
@@ -3015,7 +3184,7 @@ function editClient(id){
     status: c.status||'new',
     email: c.email||'', adresse_postale: c.adresse_postale||'',
     type_client: c.type_client||'particulier',
-    notes: c.notes||'',
+    notes: (D.clientNotes&&D.clientNotes[c.id]!==undefined?D.clientNotes[c.id]:c.notes)||'',
     ca: c.ca||0,
     sms_optout: !!c.sms_optout, _optout0: !!c.sms_optout,
     source: c.source||'autre',
@@ -5311,6 +5480,7 @@ function loadFactures(){
 }
 
 function nav(p){
+  flushNote();
   if(p==='agenda') S.calScrollTop=null; // en ouvrant l'Agenda, on repart de l'heure d'ouverture (7h)
   S.page=p;S.openModuleId=null;closeSidebar();
   ['dashboard','crm','agenda','prestations_hist','formation'].forEach(id=>{const el=$('mn-'+id);if(el)el.classList.toggle('active',id===p||(id==='formation'&&['formation'].includes(p)))});
