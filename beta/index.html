@@ -571,6 +571,16 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 .page-tab small{font-size:11px;opacity:.65;margin-left:3px}
 .page-tab:hover{color:var(--text-primary)}
 .page-tab.active{background:var(--bg-primary);color:var(--text-primary);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.page-more-wrap{display:none;position:relative}
+.page-more{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:.5px solid var(--gray-border-mid);background:var(--bg-primary);font-size:20px;line-height:1;cursor:pointer;color:var(--text-secondary);letter-spacing:1px}
+.more-menu{position:absolute;right:0;top:44px;z-index:60;min-width:200px;background:var(--bg-primary);border:.5px solid var(--gray-border-mid);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px}
+.more-menu div{padding:11px 14px;border-radius:8px;font-size:14px;cursor:pointer;color:var(--text-primary)}
+.more-menu div:active,.more-menu div:hover{background:var(--bg-secondary)}
+@media(max-width:768px){
+  .page-tabs.hide-m{display:none}
+  .page-more-wrap{display:inline-block}
+  .page-tabs{flex-wrap:nowrap;overflow-x:auto;width:auto;-webkit-overflow-scrolling:touch}
+}
 </style>
 </head>
 <body>
@@ -2348,6 +2358,9 @@ function renderApp(){
 }
 
 // Pages regroupées : une seule entrée dans le menu, les autres pages s'ouvrent par les onglets en haut de la page
+function agendaMoreToggle(e){ e.stopPropagation(); const m=document.getElementById('agenda-more'); if(m) m.hidden=!m.hidden; }
+function agendaMoreGo(p){ const m=document.getElementById('agenda-more'); if(m) m.hidden=true; nav(p); }
+document.addEventListener('click',()=>{ const m=document.getElementById('agenda-more'); if(m&&!m.hidden) m.hidden=true; });
 const NAV_GROUP={prestations_hist:'agenda',booking:'agenda',sms_campaign:'sms',depenses:'compta'};
 const NAV_TABS={
   agenda:[['agenda','Calendrier'],['prestations_hist','Mes rendez-vous'],['booking','Réservation en ligne']],
@@ -2357,7 +2370,7 @@ const NAV_TABS={
 function pageTabs(page){
   const g=NAV_GROUP[page]||page, tabs=NAV_TABS[g];
   if(!tabs||!tabs.some(t=>t[0]===page)) return '';
-  return `<div class="page-tabs">${tabs.map(t=>`<span class="page-tab${t[0]===page?' active':''}" onclick="nav('${t[0]}')">${t[1]}${t[0]==='prestations_hist'?` <small>${(D.interventions||[]).length}</small>`:''}</span>`).join('')}</div>`;
+  return `<div class="page-tabs${page==='agenda'?' hide-m':''}">${tabs.map(t=>`<span class="page-tab${t[0]===page?' active':''}" onclick="nav('${t[0]}')">${t[1]}${t[0]==='prestations_hist'?` <small>${(D.interventions||[]).length}</small>`:''}</span>`).join('')}</div>`;
 }
 function renderSidebar(){
   const name=currentProfile?currentProfile.prenom+' '+currentProfile.nom:currentUser?.email||'';
@@ -2758,7 +2771,7 @@ function pageCalendar(){
   const phone = isPhone();
   const sItems = intervOn(sel.d, sel.m, sel.y), sL = `${sel.d} ${MONTHS[sel.m]} ${sel.y}`;
 
-  return`<div class="topbar"><div class="page-title">Agenda</div><div class="btn-group">${gcBtn}${phone?'':`<button class="btn primary" onclick="openInterventionFor(${clientArg},{d:${sel.d},m:${sel.m},y:${sel.y}})">+ Rendez-vous</button>`}</div></div>
+  return`<div class="topbar"><div class="page-title">Agenda</div><div class="btn-group">${gcBtn}<span class="page-more-wrap"><span class="page-more" onclick="agendaMoreToggle(event)" title="Plus">⋯</span><div class="more-menu" id="agenda-more" hidden><div onclick="agendaMoreGo('prestations_hist')">Mes rendez-vous</div><div onclick="agendaMoreGo('booking')">Réservation en ligne</div></div></span>${phone?'':`<button class="btn primary" onclick="openInterventionFor(${clientArg},{d:${sel.d},m:${sel.m},y:${sel.y}})">+ Rendez-vous</button>`}</div></div>
   ${googleLostHtml()}${bookingNoticeHtml()}
   ${googleConnected&&googleOtherEvents.length?`<div style="display:flex;gap:10px;align-items:flex-start;background:#FFF4E5;color:#8A4B00;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin-bottom:1rem"><span>⬜</span><span style="flex:1"><strong>${googleOtherEvents.length} événement${googleOtherEvents.length>1?'s':''} de ton Google Agenda ${googleOtherEvents.length>1?'sont':'est'} en gris</strong> : ce ne sont pas des clients pour le CRM. Si l'un d'eux est un rendez-vous client, <strong>clique dessus pour l'ajouter</strong> (sinon pas de CA, pas de rappel SMS). <a onclick="googleHelp()" style="cursor:pointer;text-decoration:underline">Comment ça marche ?</a></span></div>`:''}
   ${coachHint('agenda',"<strong>Tout part de l'agenda.</strong> Chaque rendez-vous que tu ajoutes ici (avec le client, la prestation et le prix) apparaît tout seul dans « Mes rendez-vous » et alimente ton chiffre d'affaires, tes KPI et les rappels SMS à ton client. Pense à cocher « réalisé » (✔) une fois la prestation faite."+(googleConnected?' <a onclick="googleHelp()" style="cursor:pointer;text-decoration:underline">Comment fonctionne ma synchronisation Google ?</a>':''))}
