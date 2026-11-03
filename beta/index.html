@@ -566,6 +566,11 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 #onb .onb-linkbox{background:var(--bg-secondary);border-radius:12px;padding:12px 14px;margin:6px 0 10px}
 #onb .onb-err{background:#FDECEA;color:#B3261E;border-radius:9px;padding:9px 12px;font-size:13px;margin-top:10px}
 #onb .onb-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.page-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 1.1rem;padding:4px;background:var(--bg-tertiary);border-radius:12px;width:fit-content;max-width:100%}
+.page-tab{padding:7px 14px;border-radius:9px;font-size:13.5px;font-weight:500;color:var(--text-secondary);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+.page-tab small{font-size:11px;opacity:.65;margin-left:3px}
+.page-tab:hover{color:var(--text-primary)}
+.page-tab.active{background:var(--bg-primary);color:var(--text-primary);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 </style>
 </head>
 <body>
@@ -2342,25 +2347,39 @@ function renderApp(){
   loadClientNotes();
 }
 
+// Pages regroupées : une seule entrée dans le menu, les autres pages s'ouvrent par les onglets en haut de la page
+const NAV_GROUP={prestations_hist:'agenda',booking:'agenda',sms_campaign:'sms',depenses:'compta'};
+const NAV_TABS={
+  agenda:[['agenda','Calendrier'],['prestations_hist','Mes rendez-vous'],['booking','Réservation en ligne']],
+  sms:[['sms','SMS automatiques'],['sms_campaign','Campagnes SMS']],
+  compta:[['compta','Comptabilité'],['depenses','Dépenses']]
+};
+function pageTabs(page){
+  const g=NAV_GROUP[page]||page, tabs=NAV_TABS[g];
+  if(!tabs||!tabs.some(t=>t[0]===page)) return '';
+  return `<div class="page-tabs">${tabs.map(t=>`<span class="page-tab${t[0]===page?' active':''}" onclick="nav('${t[0]}')">${t[1]}${t[0]==='prestations_hist'?` <small>${(D.interventions||[]).length}</small>`:''}</span>`).join('')}</div>`;
+}
 function renderSidebar(){
   const name=currentProfile?currentProfile.prenom+' '+currentProfile.nom:currentUser?.email||'';
+  const today=new Date().toISOString().slice(0,10);
   const navs=[
-    {section:'Principal',items:[
+    {section:'',items:[
       {id:'dashboard',label:'Tableau de bord',icon:'grid'},
-      {id:'crm',label:'CRM Clients',icon:'users',badge:D.clients.length,bc:'green'},
-      {id:'booking',label:'Réservation en ligne',icon:'link',},
-      {id:'agenda',label:'Agenda',icon:'calendar',badge:D.interventions.filter(i=>i.date===new Date().toISOString().slice(0,10)&&i.statut!=='annule').length||null},
-      {id:'tasks_page',label:'Mes tâches',icon:'tasks',badge:(D.tasks||[]).filter(t=>!t.done&&t.date&&t.date<=new Date().toISOString().slice(0,10)).length||0,bc:'amber'},
-      {id:'prestations_hist',label:'Mes rendez-vous',icon:'calendar',badge:D.interventions.length},
-      {id:'sms_campaign',label:'Campagnes SMS',icon:'sms'},
-      {id:'sms',label:'SMS automatiques',icon:'sms',badge:(S.sms&&S.sms.loaded&&S.sms.status)?(S.sms.status.active?S.sms.status.remaining:'🔒'):null,bc:(S.sms&&S.sms.status&&S.sms.status.active&&(S.sms.status.remaining===0||smxLow(S.sms.status)))?'amber':undefined},
     ]},
-    {section:'Comptabilité',items:[
-      {id:'compta',label:'Comptabilité',icon:'chart'},
-      {id:'depenses',label:'Dépenses',icon:'wallet',badge:D.depenses.length},
+    {section:'Clients',items:[
+      {id:'crm',label:'CRM Clients',icon:'users',badge:D.clients.length,bc:'green'},
+      {id:'tasks_page',label:'Mes tâches',icon:'tasks',badge:(D.tasks||[]).filter(t=>!t.done&&t.date&&t.date<=today).length||0,bc:'amber'},
+    ]},
+    {section:'Agenda',items:[
+      {id:'agenda',label:'Agenda & rendez-vous',icon:'calendar',badge:D.interventions.filter(i=>i.date===today&&i.statut!=='annule').length||null},
+    ]},
+    {section:'Marketing',items:[
+      {id:'sms',label:'SMS',icon:'sms',badge:(S.sms&&S.sms.loaded&&S.sms.status)?(S.sms.status.active?S.sms.status.remaining:'🔒'):null,bc:(S.sms&&S.sms.status&&S.sms.status.active&&(S.sms.status.remaining===0||smxLow(S.sms.status)))?'amber':undefined},
       {id:'kpifb',label:'KPI Facebook',icon:'fb'},
     ]},
-
+    {section:'Comptabilité',items:[
+      {id:'compta',label:'Comptabilité & dépenses',icon:'chart'},
+    ]},
     {section:'Mon Entreprise',items:[
       {id:'profil',label:'Mon profil',icon:'settings'},
     ]},
@@ -2372,9 +2391,9 @@ function renderSidebar(){
     <div class="logo-user">${name}</div>
   </div>`;
   navs.forEach(g=>{
-    h+=`<div class="nav-section">${g.section}</div>`;
+    if(g.section) h+=`<div class="nav-section">${g.section}</div>`;
     g.items.forEach(it=>{
-      const a=S.page===it.id?' active':'';
+      const a=(S.page===it.id||NAV_GROUP[S.page]===it.id)?' active':'';
       const b=it.badge!=null?`<span class="nav-badge${it.bc?' '+it.bc:''}">${it.badge}</span>`:'';
       h+=`<div class="nav-item${a}" onclick="nav('${it.id}')">${ICONS[it.icon]}${it.label}${b}</div>`;
     });
@@ -5638,7 +5657,7 @@ function setTab(t){S.activeTab=t;render()}
 const AGENDA_OPEN_HOUR = 7;
 function renderPage(){
   const pages={sms_campaign:pageSmsCampaign,booking:pageBooking,dashboard:pageDashboard,crm:pageCRM,agenda:pageCalendar,sms:pageSms,tasks_page:pageTasksAll,prestations_hist:pagePrestationsHist,compta:pageCompta,formation:pageFormation,depenses:pageDepenses,kpifb:pageKpiFb,profil:pageProfil};
-  $('main').innerHTML=(pages[S.page]||pageDashboard)();
+  $('main').innerHTML=pageTabs(S.page)+(pages[S.page]||pageDashboard)();
   if(S.page==='agenda'){
     const sc=document.querySelector('.week-body-scroll');
     if(sc) sc.scrollTop = (S.calScrollTop!=null) ? S.calScrollTop : AGENDA_OPEN_HOUR*2*SLOT_PX; // on garde la position choisie par l'utilisateur d'un affichage à l'autre
