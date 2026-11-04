@@ -646,6 +646,93 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
   .cd-actions .btn{display:flex;align-items:center;justify-content:center;text-align:center;min-height:44px}
   .cd-actions .cd-call{grid-column:1/-1;min-height:50px;font-size:16px}
 }
+
+/* ── Audit mobile : pages encore à l'étroit ── */
+@media(max-width:768px){
+  /* Accueil : les 4 chiffres du bandeau en 2 × 2 */
+  .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
+  .hero-stat{padding-right:0;margin-right:0;border-right:none}
+  /* onglets de page (Calendrier / Mes rendez-vous / …) : défilent sans barre grise */
+  .page-tabs{scrollbar-width:none}
+  .page-tabs::-webkit-scrollbar{display:none}
+  .page-tab{flex:0 0 auto}
+  /* mises en page à colonnes fixes : on empile */
+  [style*="grid-template-columns:220px 1fr"],[style*="grid-template-columns:190px 1fr"],[style*="grid-template-columns:1fr 380px"],[style*="grid-template-columns:1fr 300px"]{grid-template-columns:minmax(0,1fr)!important}
+  [style*="grid-template-columns:1fr 1fr 1fr 1fr"],[style*="grid-template-columns:1fr 1fr 1fr;"]{grid-template-columns:1fr 1fr!important}
+  /* Mes rendez-vous : une carte par prestation */
+  .rdv-tbl thead{display:none}
+  .rdv-tbl,.rdv-tbl tbody{display:block;width:100%}
+  .rdv-tbl tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:12px 14px;border-bottom:.5px solid var(--gray-border);cursor:pointer;align-items:center}
+  .rdv-tbl td{display:block;padding:0;border:0;white-space:normal}
+  .rdv-tbl td:nth-child(2){grid-column:1;grid-row:1;font-size:15px}
+  .rdv-tbl td:nth-child(6){grid-column:2;grid-row:1;font-size:15px}
+  .rdv-tbl td:nth-child(1){grid-column:1;grid-row:2;font-size:12.5px}
+  .rdv-tbl td:nth-child(4){grid-column:1;grid-row:3;font-size:12.5px;color:var(--text-secondary)}
+  .rdv-tbl td:nth-child(7){grid-column:2;grid-row:2;justify-self:end}
+  .rdv-tbl td:nth-child(8){grid-column:2;grid-row:3;justify-self:end;gap:14px!important}
+  .rdv-tbl td:nth-child(3),.rdv-tbl td:nth-child(5),.rdv-tbl .rdv-edit{display:none}
+  .rdv-tbl .del-btn{font-size:22px;padding:0 4px}
+}
+
+@media(max-width:768px){
+  /* Mon profil : prestations et options en cartes (le tableau était coupé à droite) */
+  .prest-tbl thead,.opt-tbl thead{display:none}
+  .prest-tbl,.prest-tbl tbody,.opt-tbl,.opt-tbl tbody{display:block;width:100%}
+  .prest-tbl tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:12px 14px;border-bottom:.5px solid var(--gray-border);align-items:center}
+  .opt-tbl tr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:3px 14px;padding:12px 14px;border-bottom:.5px solid var(--gray-border);align-items:center}
+  .prest-tbl td,.opt-tbl td{display:block;padding:0;border:0;max-width:none!important;white-space:normal}
+  .prest-tbl td:nth-child(1){grid-column:1;grid-row:1;font-size:15px}
+  .prest-tbl td:nth-child(4){grid-column:2;grid-row:1;font-size:15px;font-weight:600;text-align:right}
+  .prest-tbl td:nth-child(2){grid-column:1/-1;grid-row:2;font-size:12.5px}
+  .prest-tbl td:nth-child(3){grid-column:1;grid-row:3;font-size:12.5px;color:var(--text-secondary);text-align:left}
+  .prest-tbl td:nth-child(5),.opt-tbl td:nth-child(3){text-align:right;white-space:nowrap}
+  .prest-tbl td:nth-child(5){grid-column:2;grid-row:3}
+}
+/* ── KPI Facebook version téléphone ── */
+.kp-card{background:var(--bg-primary);border:.5px solid var(--gray-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);margin-bottom:12px;overflow:hidden}
+.kp-pad{padding:14px 14px 10px}
+.kp-tabs{display:flex;gap:6px;padding:12px 12px 0;border-bottom:.5px solid var(--gray-border-mid);margin-bottom:0}
+.kp-tab{flex:1;min-width:0;border:0;background:none;padding:10px 4px 11px;font:inherit;font-size:13.5px;font-weight:600;color:var(--text-secondary);border-bottom:2.5px solid transparent;white-space:nowrap;cursor:pointer}
+.kp-tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.kp-row3{display:grid;grid-template-columns:repeat(3,1fr);padding:16px 4px 14px}
+.kp-sm{padding:0 10px;min-width:0;border-left:.5px solid var(--gray-border-mid)}
+.kp-sm:first-child{border-left:0}
+.kp-sv{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.15;white-space:nowrap}
+.kp-sl{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.3}
+.kp-needwrap{padding:0 14px 12px}
+.kp-need{border:0;background:var(--amber-light);color:var(--amber-dark);font:inherit;font-size:13px;font-weight:600;border-radius:10px;padding:9px 12px;width:100%;text-align:left;cursor:pointer}
+.kp-clients{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg-secondary);padding:14px 16px}
+.kp-ct{font-size:16px;font-weight:700}
+.kp-cs{font-size:13px;color:var(--text-secondary);margin-top:2px}
+.kp-cn{font-size:26px;font-weight:700;color:var(--green-dark);text-align:right;line-height:1.1}
+.kp-cn span{display:block;font-size:12px;font-weight:600;color:var(--text-secondary);margin-top:2px}
+.kp-grid2{display:grid;grid-template-columns:1fr 1fr}
+.kp-big{padding:16px 16px 14px;border-bottom:.5px solid var(--gray-border-mid);min-width:0}
+.kp-big:nth-child(odd){border-right:.5px solid var(--gray-border-mid)}
+.kp-v{font-size:24px;font-weight:700;letter-spacing:-.4px;line-height:1.1;white-space:nowrap}
+.kp-l{font-size:13px;color:var(--text-secondary);margin-top:6px}
+.kp-s{font-size:11.5px;color:var(--text-tertiary);margin-top:3px;line-height:1.3}
+.kp-more{display:block;width:100%;border:0;background:none;font:inherit;font-size:15px;font-weight:600;padding:14px;cursor:pointer;color:var(--text-primary)}
+.kp-hint{background:var(--amber-light);color:var(--amber-dark);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-bottom:12px}
+.kp-h{font-size:15px;font-weight:700;margin-bottom:4px}
+.kp-note{font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px}
+.kp-wk{border:.5px solid var(--gray-border-mid);border-radius:12px;padding:12px;margin-bottom:10px}
+.kp-wk.cur{background:var(--bg-secondary)}
+.kp-wkh{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;margin-bottom:10px}
+.kp-wkin{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.kp-wkin label{font-size:13px;color:var(--text-secondary)}
+.kp-wkin input{width:110px;padding:10px 10px;border:.5px solid var(--gray-border-mid);border-radius:10px;font-size:16px;text-align:right;background:var(--bg-primary);color:var(--text-primary)}
+.kp-wkg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;text-align:left}
+.kp-wkg b{display:block;font-size:15px;font-weight:700}
+.kp-wkg i{display:block;font-style:normal;font-size:11px;color:var(--text-secondary);margin-top:1px}
+.kp-wkca{margin-top:8px;font-size:12.5px;color:var(--text-secondary)}
+.kp-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.kp-ad{padding:10px 0;border-top:.5px solid var(--gray-border-mid)}
+.kp-adh{display:flex;flex-direction:column;gap:3px;margin-bottom:7px}
+.kp-adn{font-size:13.5px;font-weight:600;word-break:break-word}
+.kp-adc{font-size:12px;color:var(--text-secondary)}
+.kp-bar{height:8px;background:#E7EEF9;border-radius:4px;position:relative}
+.kp-bar div{position:absolute;left:0;top:0;height:8px;border-radius:4px}
 </style>
 </head>
 <body>
@@ -3536,7 +3623,7 @@ function pagePrestationsHist(){
   const caPaye = items.filter(i=>i.statut_paiement==='paye').reduce((s,i)=>s+(i.montant||0),0);
 
   const caView = items.reduce((s,i)=>s+(i.montant||0),0);
-  const tabStyle = v=>`padding:8px 16px;font-size:13px;cursor:pointer;font-weight:500;border-bottom:2px solid ${view===v?'var(--blue)':'transparent'};color:${view===v?'var(--blue)':'var(--text-secondary)'};margin-bottom:-1px`;
+  const tabStyle = v=>`padding:8px 13px;font-size:13px;white-space:nowrap;flex:0 0 auto;cursor:pointer;font-weight:500;border-bottom:2px solid ${view===v?'var(--blue)':'transparent'};color:${view===v?'var(--blue)':'var(--text-secondary)'};margin-bottom:-1px`;
 
   return`<div class="topbar">
     <div class="page-title">Mes rendez-vous</div>
@@ -3570,11 +3657,11 @@ function pagePrestationsHist(){
   </div>` : ''}
 
   ${(view!=='historique'&&view!=='historique_mois') ? `<div class="card">
-    <div class="tbl-wrap"><table>
+    <div class="tbl-wrap"><table class="rdv-tbl">
       <thead><tr><th>Date</th><th>Client</th><th>Véhicule</th><th>Prestation</th><th>Règlement</th><th class="td-right">Montant</th><th>Statut</th><th></th></tr></thead>
       <tbody>
       ${items.length===0?`<tr><td colspan="7" class="empty">Aucune prestation — ajoute ta première !</td></tr>`:
-        items.map(i=>`<tr>
+        items.map(i=>`<tr onclick="if(isPhone())editIntervention('${i.id}')">
           <td style="color:var(--text-secondary)">${i.date||'—'}</td>
           <td><strong>${i.client_name||'—'}</strong></td>
           <td>${i.vehicle||'—'}</td>
@@ -3583,13 +3670,13 @@ function pagePrestationsHist(){
           <td class="td-right"><strong style="color:var(--blue)">${(i.montant||0).toFixed(0)}€</strong></td>
           <td>
             ${i.statut_paiement==='paye'
-              ? `<span onclick="togglePaiement('${i.id}','attente')" style="cursor:pointer;background:var(--green-light);color:var(--green-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">✅ Payé</span>`
-              : `<span onclick="togglePaiement('${i.id}','paye')" style="cursor:pointer;background:var(--amber-light);color:var(--amber-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">⏳ En attente</span>`
+              ? `<span onclick="event.stopPropagation();togglePaiement('${i.id}','attente')" style="cursor:pointer;background:var(--green-light);color:var(--green-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">✅ Payé</span>`
+              : `<span onclick="event.stopPropagation();togglePaiement('${i.id}','paye')" style="cursor:pointer;background:var(--amber-light);color:var(--amber-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">⏳ En attente</span>`
             }
           </td>
-          <td style="display:flex;gap:8px;align-items:center">
+          <td style="display:flex;gap:8px;align-items:center" onclick="event.stopPropagation()">
             ${smxReviewBtn(i)}
-            <span style="cursor:pointer;color:var(--blue);font-size:12px" onclick="editIntervention('${i.id}')">✏️</span>
+            <span class="rdv-edit" style="cursor:pointer;color:var(--blue);font-size:12px" onclick="editIntervention('${i.id}')">✏️</span>
             <span class="del-btn" onclick="delIntervention('${i.id}')">×</span>
           </td>
         </tr>`).join('')}
@@ -3940,8 +4027,8 @@ function renderMonthlyHistory(){
                 <td class="td-right"><strong style="color:var(--blue)">${(i.montant||0).toFixed(0)}€</strong></td>
                 <td>
                   ${i.statut_paiement==='paye'
-                    ? `<span onclick="togglePaiement('${i.id}','attente')" style="cursor:pointer;background:var(--green-light);color:var(--green-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">✅ Payé</span>`
-                    : `<span onclick="togglePaiement('${i.id}','paye')" style="cursor:pointer;background:var(--amber-light);color:var(--amber-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">⏳ En attente</span>`
+                    ? `<span onclick="event.stopPropagation();togglePaiement('${i.id}','attente')" style="cursor:pointer;background:var(--green-light);color:var(--green-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">✅ Payé</span>`
+                    : `<span onclick="event.stopPropagation();togglePaiement('${i.id}','paye')" style="cursor:pointer;background:var(--amber-light);color:var(--amber-dark);padding:3px 8px;border-radius:100px;font-size:11px;font-weight:600">⏳ En attente</span>`
                   }
                 </td>
               </tr>`).join('')}
@@ -5048,7 +5135,52 @@ function pageKpiFb(){
       <td><div style="height:10px;background:#E7EEF9;border-radius:5px;position:relative;width:100%"><div style="position:absolute;left:0;top:0;height:10px;width:${r.P/mxA*100}%;background:#9DB8E8;border-radius:5px"></div><div style="position:absolute;left:0;top:0;height:10px;width:${r.C/mxA*100}%;background:var(--green-mid,#2d7a2d);border-radius:5px"></div></div></td></tr>`).join('')}</tbody></table></div>
     <div style="padding:10px 16px 14px;font-size:12px;color:var(--text-secondary);line-height:1.5">Compte les prospects arrivés pendant la période, et ceux qui ont pris rendez-vous depuis. Une publicité avec peu de prospects ne permet pas encore de conclure.</div></div>`;
   const hintKpi=(est4&&estimating)?`<div style="background:#FFF4E5;color:#8A4B00;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin-bottom:1rem">⚠️ <strong>Une partie de ton CA est estimée</strong> (signalée par « ≈ »), parce que certains clients n'ont pas de prestation enregistrée. Pour un chiffre exact : ajoute chaque rendez-vous dans l'<strong>agenda</strong> avec son prix.</div>`:'';
+  if(isPhone()) return top+kpiPhone({rows,curMon,chart,adRows,mxA,best,chip,range,grp,nq,estimating,personalised,catMax,panier})+kpiLegacyDetails();
   return top+cards+hintKpi+chart+table+recap+kpiLegacyDetails();
+}
+function kpiPRange(v){ S.kpiPRange=v; renderPage(); }
+function kpiToggleMore(){ S.kpiMore=!S.kpiMore; renderPage(); if(S.kpiMore){ const el=document.getElementById('kp-more'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); } }
+function kpiPhone(o){
+  const {rows,curMon,chart,adRows,mxA,best,chip,range,grp,nq,estimating,personalised,catMax,panier}=o;
+  const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const pr=S.kpiPRange||'4w', prevMon=kpiAdd(curMon,-7);
+  const sel=pr==='cur'?rows.filter(r=>r.w===curMon):pr==='prev'?rows.filter(r=>r.w===prevMon):rows.slice(-4);
+  const sum=(a,f)=>a.reduce((t,r)=>t+(f(r)||0),0);
+  const P=sum(sel,r=>r.P), C=sum(sel,r=>r.C), SP=sum(sel,r=>r.sp), CA=sum(sel,r=>r.ca), est=sel.some(r=>r.est);
+  const lw=sel.filter(r=>r.sp>0), Pw=sum(lw,r=>r.P), Cw=sum(lw,r=>r.C), CAw=sum(lw,r=>r.ca);
+  const cpl=(SP>0&&Pw)?kpiEur(SP/Pw):'—', cac=(SP>0&&Cw)?kpiEur(SP/Cw):'—';
+  const roas=(SP>0&&CAw>0)?(est?'≈ ':'')+f2(CAw/SP).replace('.',',')+'x':'—';
+  const rate=P?f1(C/P*100).replace('.',',')+' %':'—';
+  const tab=(v,l)=>`<button class="kp-tab${pr===v?' on':''}" onclick="kpiPRange('${v}')">${l}</button>`;
+  const need=`<button class="kp-need" onclick="if(!S.kpiMore)kpiToggleMore();else document.getElementById('kp-wk')&&document.getElementById('kp-wk').scrollIntoView({behavior:'smooth'})">Saisis tes dépenses ↓</button>`;
+  const big=(l,v,sub,col)=>`<div class="kp-big"><div class="kp-v"${col?` style="color:${col}"`:''}>${v}</div><div class="kp-l">${l}</div>${sub?`<div class="kp-s">${sub}</div>`:''}</div>`;
+  const small=(l,v,col)=>`<div class="kp-sm"><div class="kp-sv"${col?` style="color:${col}"`:''}>${v}</div><div class="kp-sl">${l}</div></div>`;
+  const top3=`<div class="kp-card">
+    <div class="kp-tabs">${tab('cur','Cette semaine')}${tab('prev','Sem. dernière')}${tab('4w','4 semaines')}</div>
+    <div class="kp-row3">${small('Prospects',P)}${small('Coût par prospect',cpl)}${small('Dépensé',SP>0?kpiEur(SP):'—')}</div>
+    ${SP>0?'':`<div class="kp-needwrap">${need}</div>`}
+    <div class="kp-clients"><div><div class="kp-ct">Clients</div><div class="kp-cs">${C} ${C>1?'ont':'a'} pris rendez-vous</div></div><div class="kp-cn">${C}<span>${rate}</span></div></div>
+    <div class="kp-grid2">${big('Coût par client',cac,(SP>0&&Cw)?'':'')}${big('Retour sur pub',roas,(SP>0&&CAw>0)?'1 € = '+f2(CAw/SP).replace('.',',')+' € de CA':'')}${big('CA contracté',CA?(est?'≈ ':'')+kpiEur(CA):'—','')}${big('Conversion',rate,'prospect → client')}</div>
+    <button class="kp-more" onclick="kpiToggleMore()">${S.kpiMore?'Voir moins ⌃':'Voir plus ⌄'}</button>
+  </div>`;
+  const hint=(est&&estimating)?`<div class="kp-hint">⚠️ Une partie du CA est estimée (« ≈ »), certains clients n'ont pas de prestation enregistrée.</div>`:'';
+  if(!S.kpiMore) return top3+hint;
+  const weeks=rows.slice().reverse().slice(0,12).map(r=>`<div class="kp-wk${r.cur?' cur':''}"><div class="kp-wkh"><strong>S${kpiIsoWeek(r.w)} · ${kpiDm(r.w)} – ${kpiDm(kpiAdd(r.w,6))}</strong>${r.cur?'<span class="pill pill-blue" style="font-size:10px">en cours</span>':''}</div>
+    <div class="kp-wkin"><label>Dépensé cette semaine</label><span><input type="number" inputmode="decimal" step="0.01" min="0" value="${r.sp!=null?r.sp:''}" placeholder="Saisir" onchange="kpiSaveSpend('${r.w}',this.value)"> €</span></div>
+    <div class="kp-wkg"><div><b>${r.P}</b><i>Prospects</i></div><div><b style="color:var(--green-dark)">${r.C}</b><i>Clients</i></div><div><b>${r.P?f1(r.rate).replace('.',',')+'%':'—'}</b><i>Conv.</i></div></div>
+    <div class="kp-wkg"><div><b>${r.cpl!=null?kpiEur(r.cpl):'—'}</b><i>Coût/prospect</i></div><div><b>${r.cac!=null?kpiEur(r.cac):'—'}</b><i>Coût/client</i></div><div><b>${r.roas!=null?(r.est?'≈ ':'')+f2(r.roas).replace('.',',')+'x':'—'}</b><i>ROAS</i></div></div>
+    ${r.ca?`<div class="kp-wkca">CA contracté : <b>${r.est?'≈ ':''}${kpiEur(r.ca)}</b></div>`:''}</div>`).join('');
+  const ads=adRows.length===0?'<div class="empty" style="padding:14px 4px">Aucun prospect sur cette période</div>':adRows.map(r=>`<div class="kp-ad"><div class="kp-adh"><span class="kp-adn">${esc(r.k)}${r.k===best?' 🏆':''}</span><span class="kp-adc"><b>${r.P}</b> prospects · <b style="color:var(--green-dark)">${r.C}</b> clients · ${f1(r.rate).replace('.',',')}%</span></div><div class="kp-bar"><div style="width:${r.P/mxA*100}%;background:#9DB8E8"></div><div style="width:${r.C/mxA*100}%;background:var(--green-mid,#2d7a2d)"></div></div></div>`).join('');
+  return top3+hint+`<div id="kp-more">
+    <div class="kp-card kp-pad" id="kp-wk"><div class="kp-h">Suivi par semaine</div><div class="kp-note">Seule case à remplir : « Dépensé », le montant de ta pub lu dans ton Gestionnaire de publicités.</div>${weeks}</div>
+    <div class="kp-card kp-pad"><div class="kp-h">Panier moyen estimé</div><div class="kp-note">Sert au CA et au ROAS quand tu n'as pas enregistré la prestation d'un client. Vide = désactivé.</div><div class="kp-wkin"><label>Panier moyen</label><span><input type="number" inputmode="decimal" step="1" min="0" value="${D.kpiPanier||''}" placeholder="${catMax>0?catMax:'ex : 129'}" onchange="kpiSavePanier(this.value)"> €</span></div></div>
+    ${chart.replace('class="card" style="margin-bottom:1rem"','class="kp-card" style="padding:4px 0 0"')}
+    <div class="kp-card kp-pad"><div class="kp-h">Qu'est-ce qui amène des clients ?</div>
+      <div class="kp-chips">${chip(range,'kpiSetRange','cur','Cette semaine')}${chip(range,'kpiSetRange','prev','Semaine dernière')}${chip(range,'kpiSetRange','4w','4 sem.')}${chip(range,'kpiSetRange','all','Tout')}</div>
+      <div class="kp-chips"><span class="kp-note" style="margin:0">Par :</span>${chip(grp,'kpiSetGroup','creation','Publicité')}${chip(grp,'kpiSetGroup','ensemble','Ensemble')}${chip(grp,'kpiSetGroup','campagne','Campagne')}${chip(grp,'kpiSetGroup','prestation','Service')}${chip(grp,'kpiSetGroup','ville','Ville')}</div>
+      ${ads}</div>
+    ${nq.size?`<div class="kp-note" style="padding:0 4px">${nq.size} prospect(s) non qualifié(s) sur la période.</div>`:''}
+  </div>`;
 }
 function kpiLegacyDetails(){
   if(!(D.kpis||[]).length) return '';
@@ -5735,7 +5867,7 @@ function pageProfil(){
   </div>
   ${notifCardHtml()}
   <div class="card"><div class="card-head"><span class="card-title">Mes tarifs (catalogue de prestations)</span><button class="btn sm" onclick="openModal('prestation')">+ Ajouter</button></div>
-    <table><thead><tr><th>Prestation</th><th>Description</th><th class="td-right">Durée</th><th class="td-right">Prix HT</th><th></th></tr></thead><tbody>
+    <table class="prest-tbl"><thead><tr><th>Prestation</th><th>Description</th><th class="td-right">Durée</th><th class="td-right">Prix HT</th><th></th></tr></thead><tbody>
     ${D.prestations.map(p=>`<tr>
       <td style="white-space:normal;max-width:300px;word-wrap:break-word"><strong>${p.nom}</strong></td><td style="white-space:normal;max-width:300px;word-wrap:break-word;color:var(--text-secondary)">${p.description||'—'}</td>
       <td class="td-right">${formatDuree(p.duree||60)}</td>
@@ -5745,7 +5877,7 @@ function pageProfil(){
     </tbody></table>
   </div>
   <div class="card"><div class="card-head"><span class="card-title">Options / suppléments</span><button class="btn sm" onclick="openModal('option')">+ Ajouter</button></div>
-    <table><thead><tr><th>Option</th><th class="td-right">Prix</th><th></th></tr></thead><tbody>
+    <table class="opt-tbl"><thead><tr><th>Option</th><th class="td-right">Prix</th><th></th></tr></thead><tbody>
     ${D.options.length===0?`<tr><td colspan="3" class="empty">Aucune option — ajoute par exemple "Traitement anti-odeur" ou "Sièges bébé"</td></tr>`:D.options.map(o=>`<tr>
       <td><strong>${o.nom}</strong></td>
       <td class="td-right">${o.prix}€</td>
