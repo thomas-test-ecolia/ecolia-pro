@@ -588,6 +588,64 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 /* — Logo — */
 .logo-icon{width:40px;height:40px;background:none;box-shadow:0 0 0 .5px rgba(255,255,255,.14);border-radius:11px;display:block;object-fit:cover}
 .login-left-icon{width:64px;height:64px;padding:0;background:none;border:none;box-shadow:0 0 0 .5px rgba(255,255,255,.18);border-radius:18px;display:block;object-fit:cover}
+
+/* ═══════════════════════════════════════════
+   MOBILE v2 : agenda plein écran, fiche de RDV qui défile, liste clients épurée
+   ═══════════════════════════════════════════ */
+.st-wrap{position:relative;display:inline-block}
+.st-pill{display:none}
+.qa-row{display:flex;gap:8px;flex-wrap:wrap;margin:-4px 0 14px}
+.qa-btn{flex:1 1 auto;min-height:44px;padding:0 14px;border-radius:12px;border:.5px solid var(--gray-border-mid);background:var(--bg-primary);color:var(--text-primary);font:600 14px var(--font);display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.qa-btn.call{background:var(--blue);color:#fff;border-color:transparent}
+.modal{overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.modal input,.modal select,.modal textarea{max-width:100%;min-width:0;box-sizing:border-box}
+.modal input[type=date],.modal input[type=time],.modal input[type=datetime-local]{-webkit-appearance:none;appearance:none;display:block;width:100%;min-height:44px;text-align:left}
+@media(max-width:768px){
+  /* fenêtres : le fond ne bouge plus, seul le contenu de la fenêtre défile, le bouton Enregistrer reste visible */
+  body.modal-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+  .modal{max-height:92vh;max-height:92dvh;padding-bottom:0}
+  .modal-actions{position:sticky;bottom:0;z-index:3;background:var(--bg-primary);margin:1rem -1.35rem 0;padding:12px 1.35rem calc(12px + env(safe-area-inset-bottom));border-top:.5px solid var(--gray-border)}
+  /* agenda : uniquement la grille des heures, sur tout l'écran */
+  body.agp-on{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+  .agp{position:fixed;left:0;right:0;top:0;bottom:var(--mnav-h,64px);z-index:100;background:var(--gray-bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+  .agp-top{display:flex;align-items:center;gap:8px;padding:8px 14px 6px;flex:0 0 auto}
+  .agp-title{flex:1;font-size:22px;font-weight:700;letter-spacing:-.025em}
+  .agp-today{border:.5px solid var(--gray-border-mid);background:var(--bg-primary);border-radius:100px;padding:0 14px;min-height:36px;font:600 13px var(--font);color:var(--blue);cursor:pointer}
+  .agp .page-more{position:relative;width:38px;height:36px}
+  .agp-dot{position:absolute;top:4px;right:4px;width:9px;height:9px;border-radius:50%;background:#E5484D}
+  .agp-banner{padding:0 14px 6px;flex:0 0 auto}
+  .agp-banner>div{margin-bottom:0!important}
+  .agp-body{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;background:var(--bg-primary);border-radius:18px 18px 0 0;overflow:hidden;box-shadow:var(--shadow-sm)}
+  .agp-body .mday-strip{flex:0 0 auto;padding:6px 6px 2px}
+  .agp-body .mday-chip{min-height:50px;padding:4px 0 2px}
+  .agp-body .mday-chip b{width:30px;height:30px;font-size:14.5px}
+  .agp-body .mday-head{flex:0 0 auto;padding:2px 10px 8px}
+  .agp-body .mday-nav{width:40px;height:40px}
+  .agp-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-top:.5px solid var(--gray-border);padding-top:12px}
+  .agp-scroll .mday-tl{margin:0 12px 110px}
+  .agp .mday-fab{bottom:calc(var(--mnav-h,64px) + 16px)}
+  /* liste des clients : plus légère */
+  .seg-wrap{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -1.25rem 12px;padding:2px 1.25rem;scrollbar-width:none}
+  .seg-wrap::-webkit-scrollbar{display:none}
+  .seg{flex:0 0 auto;padding:5px 11px;font-size:12px;gap:5px}
+  .topbar .btn.primary{min-height:36px;padding:0 14px;font-size:13px}
+  .lead-tbl .lead-mail,.lead-tbl .nophone{display:none}
+  .lead-tbl tr.lead-row>td:first-child{padding-left:0}
+  .lead-tbl tr.lead-row>td:first-child::before{display:none}
+  .lead-tbl tr.lead-row{box-shadow:inset 3px 0 0 var(--accent,transparent)}
+  .lead-tbl tr.lead-row{padding:9px 14px;gap:1px 10px;cursor:pointer;-webkit-tap-highlight-color:rgba(0,0,0,.05)}
+  .lead-name{font-size:15px}
+  .lead-tbl td:nth-child(2){font-size:12.5px;color:var(--text-tertiary)}
+  .lead-tel a{pointer-events:none}
+  .srch{padding:9px 14px}
+  .st-wrap .st-sel{position:absolute;inset:0;width:100%;height:100%;max-width:none;min-height:0;opacity:0;font-size:16px}
+  .st-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .st-pill i{width:6px;height:6px;border-radius:50%;flex:0 0 auto}
+  /* fiche client : actions en grand */
+  .cd-actions{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important;width:100%}
+  .cd-actions .btn{display:flex;align-items:center;justify-content:center;text-align:center;min-height:44px}
+  .cd-actions .cd-call{grid-column:1/-1;min-height:50px;font-size:16px}
+}
 </style>
 </head>
 <body>
@@ -625,6 +683,12 @@ const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 let googleAccessToken = null, googleTokenAt = 0, googleLost = false;
 let googleConnected = false;
 let gapiReady = false;
+// Adresse du compte Google relié (lue dans l'agenda principal, mémorisée sur cet appareil) : évite de se tromper de compte
+let googleAccountEmail = '';
+function googleEmail(){
+  if(googleAccountEmail) return googleAccountEmail;
+  try{ return localStorage.getItem('ecolia_gmail_'+(currentUser&&currentUser.id))||''; }catch(e){ return ''; }
+}
 
 function initGoogleAPI(){
   return new Promise((resolve) => {
@@ -688,6 +752,7 @@ async function disconnectGoogleCalendar(){
   if(googleAccessToken) google.accounts.oauth2.revoke(googleAccessToken, ()=>{});
   googleAccessToken = null;
   googleConnected = false;
+  googleAccountEmail = ''; try{ localStorage.removeItem('ecolia_gmail_'+(currentUser&&currentUser.id)); }catch(e){}
   render();
   await callGoogleTokenFunction('google-oauth-refresh', {disconnect:true});
 }
@@ -904,10 +969,14 @@ function parseRdvTitle(raw){
   return res;
 }
 function googleSyncLabel(){
-  if(!googleLastSyncAt) return 'Synchro Google en cours…';
-  return 'Synchro Google : '+googleLastSyncAt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const em=googleEmail(), pre=em?'Connecté : '+em+' · ':'';
+  if(!googleLastSyncAt) return pre+'synchro en cours…';
+  return pre+'synchro '+googleLastSyncAt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 }
-function refreshGoogleSyncLabel(){ const el=document.getElementById('google-sync-label'); if(el) el.textContent=googleSyncLabel(); }
+function refreshGoogleSyncLabel(){
+  const el=document.getElementById('google-sync-label'); if(el) el.textContent=googleSyncLabel();
+  const g=document.getElementById('agp-gmail'); if(g) g.textContent='Google : '+(googleEmail()||'connecté');
+}
 async function syncFromGoogleCalendar(){
   if(!googleConnected || !gapiReady || googleSyncInFlight) return;
   // on attend la fin des écritures CRM → Google pour ne pas écraser une modification qui vient d'être faite dans le CRM
@@ -923,6 +992,12 @@ async function syncFromGoogleCalendar(){
       calendarId: 'primary', timeMin, timeMax, singleEvents: true, orderBy: 'startTime', maxResults: 250, showDeleted: true
     });
     const events = (resp.result && resp.result.items) || [];
+    { // l'agenda principal porte l'adresse du compte Google (titre de l'agenda, ou organisateur de ses propres événements)
+      const r0=resp.result||{}; let em='';
+      if(/^[^@\s]+@[^@\s]+$/.test(r0.summary||'')) em=r0.summary;
+      else { const o=events.map(e=>e.organizer&&e.organizer.self&&e.organizer.email).find(Boolean); if(o) em=o; }
+      if(em&&em!==googleAccountEmail){ googleAccountEmail=em; try{ localStorage.setItem('ecolia_gmail_'+currentUser.id,em); }catch(e){} }
+    }
     const pad = n => String(n).padStart(2,'0');
     const byGoogleId = new Map(D.interventions.filter(i=>i.google_event_id).map(i=>[i.google_event_id,i]));
     const editingId = (S.selectedInterv || (document.getElementById('modal-overlay')?.classList.contains('open') ? S.form?.editIntervId : null)) || null;
@@ -2770,7 +2845,7 @@ function pageDashboard(){
 // ═══════════════════════════════════
 const MD_PX=60; // pixels par heure
 function isPhone(){ return !!(window.matchMedia&&window.matchMedia('(max-width:768px)').matches); }
-function mobileDayAgenda(sel,weekDays,clientArg){
+function mobileDayAgenda(sel,weekDays,clientArg,bookingBanner){
   const today=new Date(), esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
   const items=[];
   intervOn(sel.d,sel.m,sel.y).filter(i=>i.statut!=='annule').forEach(i=>{ const s=timeToMin(i.heure||'09:00'); items.push({kind:'crm',ref:i,s,e:Math.min(1440,s+(i.duree||60))}); });
@@ -2798,14 +2873,28 @@ function mobileDayAgenda(sel,weekDays,clientArg){
     return `<div class="mday-ev${done?' done':''}" style="${pos}" onclick="event.stopPropagation();editIntervention('${o.id}')"><div style="display:flex;justify-content:space-between;gap:6px"><b>${esc(o.client_name||'—')}</b>${o.montant?`<span class="mday-price">${o.montant} €</span>`:''}</div><div class="mday-sub">${range}${o.prestation?' · '+esc(o.prestation):''}${done?' · ✓':''}</div>${h>=74&&o.adresse?`<div class="mday-sub">📍 ${esc(o.adresse)}</div>`:''}</div>`;
   }).join('');
   const nowLine=(sel.d===today.getDate()&&sel.m===today.getMonth()&&sel.y===today.getFullYear())?(()=>{ const m=today.getHours()*60+today.getMinutes(); return (m/60>=startH&&m/60<=endH)?`<div class="mday-now" style="top:${Math.round((m/60-startH)*MD_PX)}px"></div>`:''; })():'';
-  return `<div class="card mday-swipe" style="margin-bottom:1rem">
-    <div class="mday-strip">${strip}</div>
-    <div class="mday-head"><button type="button" class="mday-nav" onclick="calDay2(${prev.d},${prev.m},${prev.y})" aria-label="Jour précédent">‹</button><div style="text-align:center"><b>${label}</b><div style="font-size:12px;color:var(--text-secondary)">${items.filter(x=>x.kind==='crm').length?items.filter(x=>x.kind==='crm').length+' rendez-vous':'Aucun rendez-vous'}</div></div><button type="button" class="mday-nav" onclick="calDay2(${next.d},${next.m},${next.y})" aria-label="Jour suivant">›</button></div>
-    <div class="mday-tl" style="height:${H}px" data-start="${startH}" onclick="mdSlotTap(event,${sel.d},${sel.m},${sel.y},${clientArg})">${hours}${blocks}${nowLine}</div>
-    <div style="padding:2px 14px 12px;text-align:center"><button type="button" class="btn sm" onclick="weekToday()">Aujourd'hui</button></div>
-  </div>
-  <button type="button" class="mday-fab" onclick="openInterventionFor(${clientArg},{d:${sel.d},m:${sel.m},y:${sel.y}})" aria-label="Ajouter un rendez-vous">+</button>`;
+  const isTodaySel=(sel.d===today.getDate()&&sel.m===today.getMonth()&&sel.y===today.getFullYear());
+  const tgtH=isTodaySel?today.getHours()-1:(items.length?Math.floor(Math.min(...items.map(x=>x.s))/60)-1:8);
+  const initTop=Math.max(0,Math.round((tgtH-startH)*MD_PX));
+  const nCrm=items.filter(x=>x.kind==='crm').length;
+  const menu=`<span class="page-more-wrap" style="display:inline-block"><span class="page-more" onclick="agendaMoreToggle(event)" title="Plus">⋯${googleLost?'<i class="agp-dot"></i>':''}</span><div class="more-menu" id="agenda-more" hidden>
+    ${googleConnected?`<div id="agp-gmail" style="font-size:12.5px;color:var(--text-secondary);pointer-events:none;word-break:break-all">Google : ${esc(googleEmail()||'connecté')}</div>`:''}
+    ${googleLost?`<div onclick="agendaMoreCall('connectGoogleCalendar')" style="color:#B3261E;font-weight:600">🔌 Reconnecter Google Agenda</div>`:''}
+    <div onclick="agendaMoreGo('prestations_hist')">Mes rendez-vous</div><div onclick="agendaMoreGo('booking')">Réservation en ligne</div>
+    ${googleConnected?`<div onclick="agendaMoreCall('disconnectGoogleCalendar')">Déconnecter Google</div>`:`<div onclick="agendaMoreCall('connectGoogleCalendar')">📅 Connecter Google Agenda</div>`}
+  </div></span>`;
+  return `<div class="agp">
+    <div class="agp-top"><span class="agp-title">Agenda</span><button type="button" class="agp-today" onclick="weekToday()">Aujourd'hui</button>${menu}</div>
+    ${bookingBanner?`<div class="agp-banner">${bookingBanner}</div>`:''}
+    <div class="agp-body mday-swipe">
+      <div class="mday-strip">${strip}</div>
+      <div class="mday-head"><button type="button" class="mday-nav" onclick="calDay2(${prev.d},${prev.m},${prev.y})" aria-label="Jour précédent">‹</button><div style="text-align:center"><b>${label}</b><div style="font-size:12px;color:var(--text-secondary)">${nCrm?nCrm+' rendez-vous':'Aucun rendez-vous'}</div></div><button type="button" class="mday-nav" onclick="calDay2(${next.d},${next.m},${next.y})" aria-label="Jour suivant">›</button></div>
+      <div class="agp-scroll" id="agp-scroll" data-init="${initTop}"><div class="mday-tl" style="height:${H}px" data-start="${startH}" onclick="mdSlotTap(event,${sel.d},${sel.m},${sel.y},${clientArg})">${hours}${blocks}${nowLine}</div></div>
+    </div>
+    <button type="button" class="mday-fab" onclick="openInterventionFor(${clientArg},{d:${sel.d},m:${sel.m},y:${sel.y}})" aria-label="Ajouter un rendez-vous">+</button>
+  </div>`;
 }
+function agendaMoreCall(fn){ const m=document.getElementById('agenda-more'); if(m) m.hidden=true; try{ window[fn](); }catch(e){ console.error(e); } }
 function mdSlotTap(ev,d,m,y,clientId){
   const tl=ev.currentTarget, r=tl.getBoundingClientRect(), startH=parseInt(tl.dataset.start,10)||7;
   const min=Math.max(0,Math.min(1410,Math.floor(((ev.clientY-r.top)/MD_PX*60+startH*60)/30)*30));
@@ -2866,6 +2955,7 @@ function pageCalendar(){
 
   const phone = isPhone();
   const sItems = intervOn(sel.d, sel.m, sel.y), sL = `${sel.d} ${MONTHS[sel.m]} ${sel.y}`;
+  if(phone) return mobileDayAgenda(sel,weekDays,clientArg,bookingBanner);   // téléphone : l'agenda seul, plein écran
 
   return`<div class="topbar"><div class="page-title">Agenda</div><div class="btn-group">${gcBtn}<span class="page-more-wrap"><span class="page-more" onclick="agendaMoreToggle(event)" title="Plus">⋯</span><div class="more-menu" id="agenda-more" hidden><div onclick="agendaMoreGo('prestations_hist')">Mes rendez-vous</div><div onclick="agendaMoreGo('booking')">Réservation en ligne</div></div></span>${phone?'':`<button class="btn primary" onclick="openInterventionFor(${clientArg},{d:${sel.d},m:${sel.m},y:${sel.y}})">+ Rendez-vous</button>`}</div></div>
   ${googleLostHtml()}${bookingNoticeHtml()}
@@ -2993,7 +3083,8 @@ function pageClientDetail(clientId){
         </div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="cd-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+      ${c.phone?`<a href="tel:${String(c.phone).replace(/[^+\d]/g,'')}" class="btn primary cd-call" style="text-decoration:none">📞 Appeler</a>`:''}
       <button class="btn" onclick="editClient('${c.id}')">✏️ Modifier</button>
       <button class="btn primary" onclick="startBookingFlow('${c.id}','${(c.name||'').replace(/'/g,"\\'")}')">📅 Prendre RDV</button>
       ${c.phone?`<a href="sms:${c.phone}?body=Bonjour%20${encodeURIComponent(c.name.split(' ')[0])}%2C%20" class="btn" style="text-decoration:none">📱 SMS</a>`:''}
@@ -3348,9 +3439,9 @@ function pageCRM(){
           const clientCA = getClientCA(c.name);
           const initials = (c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
           const st = getStatutStyle(c.status||'new');
-          return`<tr class="lead-row" style="--accent:${st.color};--i:${idx}">
+          return`<tr class="lead-row" style="--accent:${st.color};--i:${idx}" onclick="S.crmClientId='${c.id}';render()">
             <td>
-              <div class="lead-id" onclick="S.crmClientId='${c.id}';render()">
+              <div class="lead-id">
                 <div class="avatar" style="background:${avatarGrad(c.name)}">${initials}</div>
                 <div>
                   <div class="lead-name">${c.name}</div>
@@ -3358,11 +3449,12 @@ function pageCRM(){
                 </div>
               </div>
             </td>
-            <td class="lead-tel">${c.phone?`<a href="tel:${String(c.phone).replace(/[^+\d]/g,'')}" onclick="event.stopPropagation()" style="color:inherit;text-decoration:none">${c.phone}</a>`:'—'}</td>
+            <td class="lead-tel">${c.phone?`<a href="tel:${String(c.phone).replace(/[^+\d]/g,'')}" onclick="event.stopPropagation()" style="color:inherit;text-decoration:none">${c.phone}</a>`:'<span class="nophone">—</span>'}</td>
             <td onclick="event.stopPropagation()">
+              <div class="st-wrap"><span class="st-pill" style="background:${st.bg};color:${st.color}"><i style="background:${st.color}"></i>${st.l.replace(/^[^ ]+ /,'').replace('Tentative de contact','Tentative')}</span>
               <select class="st-sel" onchange="updateLeadStatut('${c.id}',this.value)" style="background-color:${st.bg};color:${st.color}">
                 ${STATUTS.map(s=>`<option value="${s.v}"${(c.status||'new')===s.v?' selected':''}>${s.l}</option>`).join('')}
-              </select>
+              </select></div>
             </td>
             <td class="lead-ca" style="color:${clientCA>0?'var(--text-primary)':'var(--text-tertiary)'}">${clientCA>0?clientCA.toFixed(0)+'€':'—'}</td>
             <td class="lead-meta">${c.created_at?`${new Date(c.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}<span style="color:var(--text-tertiary)"> · ${new Date(c.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`:'—'}</td>
@@ -3514,8 +3606,12 @@ function mIntervention(){
   const searchQ = (S.form.clientSearch||'').toLowerCase();
   const filteredClients = searchQ ? sortedClients.filter(c=>(c.name||'').toLowerCase().includes(searchQ)) : sortedClients;
 
+  const _qa=(()=>{ if(!isEdit) return '';
+    const cl=D.clients.find(x=>String(x.id)===String(S.form.clientId)); const tel=String((cl&&cl.phone)||'').replace(/[^+\d]/g,''); const adr=(S.form.adresse||'').trim();
+    if(!tel&&!adr) return '';
+    return `<div class="qa-row">${tel?`<a class="qa-btn call" href="tel:${tel}">📞 Appeler</a>`:''}${adr?`<button type="button" class="qa-btn" onclick="goTo('waze')">🧭 Waze</button><button type="button" class="qa-btn" onclick="goTo('maps')">📍 Google Maps</button>`:''}</div>`; })();
   return`<div class="modal-title">${isEdit?'Modifier la prestation':'Nouvelle prestation'}</div>
-
+  ${_qa}
   <div class="field"><label>Client</label>
     ${isEdit
       ? `<div style="padding:8px 10px;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px;font-weight:500">${S.form._clientName||'—'}</div>`
@@ -3756,6 +3852,12 @@ async function markIntervRealise(id){
   render();
 }
 
+// « Y aller » : ouvre Waze ou Google Maps avec l'adresse du rendez-vous
+function goTo(app){
+  const a=(S.form&&S.form.adresse||'').trim(); if(!a) return;
+  const q=encodeURIComponent(a);
+  window.open(app==='waze'?'https://waze.com/ul?q='+q+'&navigate=yes':'https://www.google.com/maps/dir/?api=1&destination='+q+'&travelmode=driving','_blank');
+}
 function editIntervention(id){
   const i = D.interventions.find(x=>x.id===id||x.id==id);
   if(!i) return;
@@ -5750,7 +5852,7 @@ function loadFactures(){
 function nav(p){
   flushNote(); autoFlushAll();
   if(p==='booking'&&!_auto.bk) S.bk=null;
-  if(p==='agenda') S.calScrollTop=null; // en ouvrant l'Agenda, on repart de l'heure d'ouverture (7h)
+  if(p==='agenda'){ S.calScrollTop=null; S.agpTop=null; } // en ouvrant l'Agenda, on repart de l'heure d'ouverture (7h)
   S.page=p;S.openModuleId=null;closeSidebar();
   ['dashboard','crm','agenda','prestations_hist','formation'].forEach(id=>{const el=$('mn-'+id);if(el)el.classList.toggle('active',id===p||(id==='formation'&&['formation'].includes(p)))});
   render();
@@ -5779,6 +5881,10 @@ const AGENDA_OPEN_HOUR = 7;
 function renderPage(){
   const pages={sms_campaign:pageSmsCampaign,booking:pageBooking,dashboard:pageDashboard,crm:pageCRM,agenda:pageCalendar,sms:pageSms,tasks_page:pageTasksAll,prestations_hist:pagePrestationsHist,compta:pageCompta,formation:pageFormation,depenses:pageDepenses,kpifb:pageKpiFb,profil:pageProfil};
   $('main').innerHTML=pageTabs(S.page)+(pages[S.page]||pageDashboard)();
+  document.body.classList.toggle('agp-on', S.page==='agenda' && isPhone());
+  { const mn=$('mobile-nav'); if(mn&&mn.offsetHeight) document.documentElement.style.setProperty('--mnav-h',mn.offsetHeight+'px'); }
+  const agp=document.getElementById('agp-scroll');
+  if(agp){ agp.scrollTop=(S.agpTop!=null)?S.agpTop:(parseInt(agp.dataset.init,10)||0); }
   if(S.page==='agenda'){
     const sc=document.querySelector('.week-body-scroll');
     if(sc) sc.scrollTop = (S.calScrollTop!=null) ? S.calScrollTop : AGENDA_OPEN_HOUR*2*SLOT_PX; // on garde la position choisie par l'utilisateur d'un affichage à l'autre
@@ -5788,6 +5894,7 @@ function renderPage(){
 document.addEventListener('scroll', e=>{
   const t=e.target;
   if(t && t.classList && t.classList.contains('week-body-scroll')) S.calScrollTop=t.scrollTop;
+  if(t && t.id==='agp-scroll') S.agpTop=t.scrollTop;
 }, true);
 function render(){
   $('sidebar').innerHTML=renderSidebar();
@@ -5853,6 +5960,17 @@ document.addEventListener('keydown', e=>{
   sb.auth.onAuthStateChange((event,session)=>{
     if(event==='SIGNED_OUT'){currentUser=null;currentProfile=null;renderLogin();}
   });
+})();
+
+// Fenêtres (modales) : sur téléphone, la page derrière ne défile plus pendant qu'une fenêtre est ouverte
+(function(){
+  const ov=document.getElementById('modal-overlay'); if(!ov||!window.MutationObserver) return;
+  let y=0, locked=false;
+  new MutationObserver(()=>{
+    const open=ov.classList.contains('open');
+    if(open&&!locked){ y=window.pageYOffset||0; document.body.style.top=(-y)+'px'; document.body.classList.add('modal-open'); locked=true; }
+    else if(!open&&locked){ document.body.classList.remove('modal-open'); document.body.style.top=''; window.scrollTo(0,y); locked=false; }
+  }).observe(ov,{attributes:true,attributeFilter:['class']});
 })();
 </script>
 </body>
