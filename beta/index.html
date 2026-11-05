@@ -5308,6 +5308,7 @@ async function delOption(id){
 }
 
 function openModal(t){
+  cleanAllData();
   S.modal=t;
   S.form={type:'nettoyage',categorie:CAT_DEP[0],moyen:MOYENS[0],status:'new',source:'autre',statut:'confirme',prenom:'',nom:'',adresse:'',prix:'',telephone:'',notes:'',docType:'facture',lignes:[{nom:'',description:'',quantite:1,prix:0}],tva:0,date:new Date().toISOString().slice(0,10)};
   const mp={client:mClient,depense:mDep,kpi:mKpi,newdoc:mNewDoc,prestation:mPrestation,option:mOption,intervention:mIntervention,task:mTask};
@@ -6093,7 +6094,30 @@ function pageAide(){
   const foot=`<div style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin:4px 2px 1rem">Une question qui reste sans réponse ? Pose-la à ton coach. Si une vidéo ne démarre pas, vérifie ta connexion, puis recharge la page.</div>`;
   return top+intro+vids+foot;
 }
+// ═══════════════════════════════════
+// SÉCURITÉ : nettoyage des textes venus de l'extérieur (formulaire de réservation, Facebook, Google Agenda…)
+// Les caractères qui permettent d'injecter du code (< > " ' ` \ et les entités &#…;) sont remplacés par des équivalents inoffensifs.
+// ═══════════════════════════════════
+const _DANGER=/[<>"'`\\]|&(?:#|[A-Za-z0-9]+;)/;
+function cleanText(v){ return String(v).replace(/</g,'‹').replace(/>/g,'›').replace(/"/g,'”').replace(/'/g,'’').replace(/`/g,'´').replace(/\\/g,'/').replace(/&(?=#|[A-Za-z0-9]+;)/g,'＆'); }
+function cleanRow(o){
+  if(!o||typeof o!=='object') return;
+  for(const k in o){
+    const v=o[k];
+    if(typeof v==='string'){ if(_DANGER.test(v)) o[k]=cleanText(v); }
+    else if(Array.isArray(v)){ for(let i=0;i<v.length;i++){ if(typeof v[i]==='string'&&_DANGER.test(v[i])) v[i]=cleanText(v[i]); } }
+  }
+}
+function cleanAllData(){
+  try{
+    ['clients','interventions','leadEvents','tasks','depenses','prestations','options','kpis','factures','events'].forEach(k=>{ const a=D[k]; if(Array.isArray(a)) a.forEach(cleanRow); });
+    const n=D.clientNotes; if(n&&typeof n==='object'){ for(const k in n){ if(typeof n[k]==='string'&&_DANGER.test(n[k])) n[k]=cleanText(n[k]); } }
+    if(S.sms&&Array.isArray(S.sms.queue)) S.sms.queue.forEach(cleanRow);
+  }catch(e){ console.error(e); }
+}
+
 function renderPage(){
+  cleanAllData();
   const pages={sms_campaign:pageSmsCampaign,booking:pageBooking,dashboard:pageDashboard,crm:pageCRM,agenda:pageCalendar,sms:pageSms,tasks_page:pageTasksAll,prestations_hist:pagePrestationsHist,compta:pageCompta,formation:pageFormation,depenses:pageDepenses,kpifb:pageKpiFb,profil:pageProfil,aide:pageAide};
   $('main').innerHTML=pageTabs(S.page)+(pages[S.page]||pageDashboard)();
   document.body.classList.toggle('agp-on', S.page==='agenda' && isPhone());
