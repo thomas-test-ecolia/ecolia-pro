@@ -2157,8 +2157,8 @@ async function doRegister(){
   btn.disabled=true;btn.textContent='Création du compte...';
 
   // Vérifier si identifiant déjà pris
-  const {data:existing}=await sb.from('profiles').select('id').eq('identifiant',identifiant).maybeSingle();
-  if(existing){err.textContent='Cet identifiant est déjà utilisé.';err.classList.add('show');btn.disabled=false;btn.textContent='Créer mon compte';return;}
+  const {data:existing}=await sb.rpc('identifiant_pris',{p_id:identifiant});
+  if(existing===true){err.textContent='Cet identifiant est déjà utilisé.';err.classList.add('show');btn.disabled=false;btn.textContent='Créer mon compte';return;}
 
   // Créer le compte Supabase Auth
   const {data,error}=await sb.auth.signUp({email,password:pw});
