@@ -803,7 +803,19 @@ const GOOGLE_CLIENT_ID = '800330767356-ru52r1tmaickrdtnkftjjicheauou8og.apps.goo
 const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/calendar.events';
 let googleAccessToken = null, googleTokenAt = 0, googleLost = false;
 let googleConnected = false;
+let googleOwner = null; // identifiant de l'élève à qui appartient le jeton Google gardé en mémoire
 let gapiReady = false;
+// SÉCURITÉ : le jeton Google en mémoire n'appartient QU'À l'élève qui l'a obtenu. Si une autre personne se connecte dans le même onglet
+// (déconnexion puis connexion à un autre compte), on efface tout l'état Google : jamais le Google d'un autre.
+function resetGoogleState(){
+  googleAccessToken = null; googleTokenAt = 0; googleLost = false; googleConnected = false; googleOwner = null; googleAccountEmail = '';
+  try{ googleOtherEvents = []; googleLastSyncAt = null; googleSyncInFlight = false; }catch(e){}
+  try{ if(window.gapi && gapi.client) gapi.client.setToken(null); }catch(e){}
+}
+function googleGuard(){
+  if(googleConnected && (!currentUser || googleOwner !== currentUser.id)){ resetGoogleState(); }
+  return googleConnected;
+}
 // Adresse du compte Google relié (lue dans l'agenda principal, mémorisée sur cet appareil) : évite de se tromper de compte
 let googleAccountEmail = '';
 function googleEmail(){
@@ -847,6 +859,7 @@ function connectGoogleCalendar(){
     alert('Chargement en cours, réessaie dans quelques secondes.');
     return;
   }
+  const uidAtStart = currentUser && currentUser.id;
   const client = google.accounts.oauth2.initCodeClient({
     client_id: GOOGLE_CLIENT_ID,
     scope: GOOGLE_SCOPES,
@@ -857,8 +870,9 @@ function connectGoogleCalendar(){
       if(resp.error){ console.error(resp); return; }
       const data = await callGoogleTokenFunction('google-oauth-exchange', {code:resp.code, redirect_uri:'postmessage'});
       if(data.error){ alert('Erreur de connexion Google : '+data.error); return; }
+      if(!currentUser || currentUser.id!==uidAtStart){ return; }   // un autre compte s'est connecté entre-temps : on ignore
       googleAccessToken = data.access_token; googleTokenAt = Date.now(); googleLost = false;
-      googleConnected = true;
+      googleConnected = true; googleOwner = currentUser.id;
       if(gapiReady) gapi.client.setToken({access_token: googleAccessToken});
       render();
       if(S.page==='agenda') syncFromGoogleCalendar();
@@ -870,6 +884,7 @@ function connectGoogleCalendar(){
 }
 
 async function disconnectGoogleCalendar(){
+  googleGuard();
   if(googleAccessToken) google.accounts.oauth2.revoke(googleAccessToken, ()=>{});
   googleAccessToken = null;
   googleConnected = false;
@@ -881,10 +896,12 @@ async function disconnectGoogleCalendar(){
 // Reconnecte silencieusement Google Agenda au chargement, via notre fonction serveur (pas de popup, donc jamais bloqué par le navigateur)
 async function tryReconnectGoogleCalendar(){
   try{
+    const uidAtStart = currentUser && currentUser.id;
     const data = await callGoogleTokenFunction('google-oauth-refresh', {});
+    if(!currentUser || currentUser.id!==uidAtStart) return;   // un autre compte s'est connecté entre-temps : le jeton reçu ne doit pas lui être donné
     if(data.error || !data.access_token) return; // pas encore connecté, ou jeton absent : rien à faire
     googleAccessToken = data.access_token; googleTokenAt = Date.now(); googleLost = false;
-    googleConnected = true;
+    googleConnected = true; googleOwner = currentUser.id;
     if(gapiReady) gapi.client.setToken({access_token: googleAccessToken});
     render();
     if(S.page==='agenda') syncFromGoogleCalendar();
@@ -893,10 +910,12 @@ async function tryReconnectGoogleCalendar(){
 // Le jeton Google ne dure qu'environ 1 h : on le renouvelle avant qu'il expire (ou tout de suite si Google l'a refusé).
 // Si le renouvellement échoue, la connexion est vraiment perdue : on le dit à l'élève au lieu de rester silencieux.
 async function ensureGoogleToken(force){
-  if(!googleConnected) return false;
+  if(!googleGuard()) return false;
   if(!force && Date.now()-googleTokenAt < 40*60000) return true;
   try{
+    const uidAtStart = currentUser && currentUser.id;
     const data = await callGoogleTokenFunction('google-oauth-refresh', {});
+    if(!currentUser || currentUser.id!==uidAtStart) return false;
     if(data && data.access_token){
       googleAccessToken = data.access_token; googleTokenAt = Date.now(); googleLost = false;
       if(gapiReady) gapi.client.setToken({access_token: googleAccessToken});
@@ -928,7 +947,7 @@ function buildGoogleDescription(interv){
 let googleExportsInFlight = 0, googleLastExportAt = 0;
 // Supprime l'événement Google lié à un RDV du CRM (si Google est connecté)
 async function deleteGoogleEventFor(interv){
-  if(!interv || !interv.google_event_id || !googleConnected || !gapiReady) return;
+  if(!interv || !interv.google_event_id || !googleGuard() || !gapiReady) return;
   googleExportsInFlight++;
   try {
     await gapi.client.calendar.events.delete({calendarId:'primary', eventId:interv.google_event_id});
@@ -938,7 +957,7 @@ async function deleteGoogleEventFor(interv){
   } finally { googleExportsInFlight--; googleLastExportAt = Date.now(); }
 }
 async function autoExportToGoogle(interv, retried){
-  if(!googleConnected || !gapiReady) return;
+  if(!googleGuard() || !gapiReady) return;
   await ensureGoogleToken(false);
   if(!googleConnected) return;
   googleExportsInFlight++;
@@ -1099,7 +1118,7 @@ function refreshGoogleSyncLabel(){
   const g=document.getElementById('agp-gmail'); if(g) g.textContent='Google : '+(googleEmail()||'connecté');
 }
 async function syncFromGoogleCalendar(){
-  if(!googleConnected || !gapiReady || googleSyncInFlight) return;
+  if(!googleGuard() || !gapiReady || googleSyncInFlight) return;
   // on attend la fin des écritures CRM → Google pour ne pas écraser une modification qui vient d'être faite dans le CRM
   if(googleExportsInFlight>0 || Date.now()-googleLastExportAt < 20000) return;
   googleSyncInFlight = true;
@@ -1397,7 +1416,7 @@ async function pollBookings(){
       S.bookingNotices=(S.bookingNotices||[]).concat(fresh.map(i=>({id:i.id,name:i.client_name,date:i.date,heure:i.heure})));
       if(!document.getElementById('modal-overlay')?.classList.contains('open')) render();
     }
-    if(googleConnected&&gapiReady){
+    if(googleGuard()&&gapiReady){
       const todo=D.interventions.filter(i=>(i.statut||'realise')==='planifie'&&!i.google_event_id&&String(i.date||'').slice(0,10)>=today&&!bookingExportBusy.has(i.id));
       for(const i of todo){ bookingExportBusy.add(i.id); try{ await autoExportToGoogle(i); }finally{ bookingExportBusy.delete(i.id); } }
     }
@@ -2190,6 +2209,7 @@ function viewDeadChain(){
 }
 function enableViewOnly(){
   VIEW_ONLY=true;
+  resetGoogleState();
   const origFrom=sb.from.bind(sb);
   sb.from=function(t){ const q=origFrom(t); ['insert','update','upsert','delete'].forEach(m=>{ q[m]=function(){ viewBlocked(); return viewDeadChain(); }; }); return q; };
   sb.rpc=function(){ viewBlocked(); return viewDeadChain(); };
@@ -2243,6 +2263,7 @@ async function startViewAs(uid){
 
 async function loadProfileAndStart(){
   showLoading('Chargement de ton espace...');
+  resetGoogleState();   // nouvelle connexion : aucun reste du Google d'une session précédente
   const {data:profile}=await sb.from('profiles').select('*').eq('id',currentUser.id).maybeSingle();
   currentProfile=profile;
 
@@ -6056,6 +6077,7 @@ function nav(p){
 }
 
 async function logout(){
+  resetGoogleState();
   await hardSignOut();
   currentUser=null;currentProfile=null;D={events:[],clients:[],depenses:[],kpis:[],quizState:{},factures:[],prestations:[{id:1,nom:'Nettoyage intérieur',prix:80,description:''},{id:2,nom:'Nettoyage extérieur',prix:60,description:''},{id:3,nom:'Nettoyage complet',prix:130,description:''},{id:4,nom:'Protection céramique',prix:250,description:''},{id:5,nom:'Polish / Correction',prix:180,description:''}],options:[],profil:{siret:'',nom_entreprise:'',adresse:'',telephone:'',email_pro:'',logo:null,couleur:'#0E6FDB',iban:''},nextFactureNum:1};
   const mn=$('mobile-nav');if(mn)mn.style.display='none';
@@ -6197,7 +6219,7 @@ document.addEventListener('keydown', e=>{
   }
   // Écouter les changements de session
   sb.auth.onAuthStateChange((event,session)=>{
-    if(event==='SIGNED_OUT'){currentUser=null;currentProfile=null;renderLogin();}
+    if(event==='SIGNED_OUT'){resetGoogleState();currentUser=null;currentProfile=null;renderLogin();}
   });
 })();
 
