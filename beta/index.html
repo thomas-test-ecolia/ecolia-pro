@@ -714,8 +714,11 @@ tbody tr:hover td{background:rgba(0,0,0,.022)}
 /* ── KPI Facebook version téléphone ── */
 .kp-card{background:var(--bg-primary);border:.5px solid var(--gray-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);margin-bottom:12px;overflow:hidden}
 .kp-pad{padding:14px 14px 10px}
-.kp-tabs{display:flex;gap:6px;padding:12px 12px 0;border-bottom:.5px solid var(--gray-border-mid);margin-bottom:0}
-.kp-tab{flex:1;min-width:0;border:0;background:none;padding:10px 4px 11px;font:inherit;font-size:13.5px;font-weight:600;color:var(--text-secondary);border-bottom:2.5px solid transparent;white-space:nowrap;cursor:pointer}
+.kp-tabs{display:flex;gap:6px;padding:12px 12px 0;border-bottom:.5px solid var(--gray-border-mid);margin-bottom:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}.kp-tabs::-webkit-scrollbar{display:none}
+.kp-per{padding:8px 14px 0;font-size:11.5px;color:var(--text-secondary)}
+.kp-custom,.kpi-custom{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--text-secondary)}.kp-custom{padding:10px 14px 0}.kpi-custom{margin-top:8px}
+.kp-custom input,.kpi-custom input{padding:6px 8px;border:.5px solid var(--gray-border-mid);border-radius:6px;font:inherit;font-size:13px;background:var(--bg-primary);color:var(--text-primary)}
+.kp-tab{flex:0 0 auto;min-width:0;border:0;background:none;padding:10px 10px 11px;font:inherit;font-size:13.5px;font-weight:600;color:var(--text-secondary);border-bottom:2.5px solid transparent;white-space:nowrap;cursor:pointer}
 .kp-tab.on{color:var(--blue);border-bottom-color:var(--blue)}
 .kp-row3{display:grid;grid-template-columns:repeat(3,1fr);padding:16px 4px 14px}
 .kp-sm{padding:0 10px;min-width:0;border-left:.5px solid var(--gray-border-mid)}
@@ -5149,6 +5152,37 @@ async function kpiSavePanier(val){
   D.kpiPanier=n; renderPage();
 }
 function kpiSetRange(v){ S.kpiRange=v; renderPage(); }
+// ── Période choisie en haut de la page (cartes, graphique, « Qu'est-ce qui amène des clients ? ») : semaines entières lundi → dimanche
+const KPI_PERIODS=[['cur','Cette semaine','Sem. en cours','cette semaine'],['prev','Semaine dernière','Sem. dernière','la semaine dernière'],['4w','4 dernières semaines','4 semaines','les 4 dernières semaines'],['m','Ce mois-ci','Ce mois','ce mois-ci'],['pm','Mois dernier','Mois dernier','le mois dernier'],['12w','3 derniers mois','3 mois','les 3 derniers mois'],['all','Depuis le début','Depuis le début','depuis le début'],['custom','Personnalisé','Perso','la période choisie']];
+function kpiPeriod(rows,curMon){
+  const key=KPI_PERIODS.some(x=>x[0]===S.kpiPeriod)?S.kpiPeriod:'4w';
+  const today=kpiParis(Date.now()); const ym=today.slice(0,7);
+  const [ty,tm]=ym.split('-').map(Number); const pm=tm===1?(ty-1)+'-12':ty+'-'+String(tm-1).padStart(2,'0');
+  const mon=w=>kpiAdd(w,3).slice(0,7); // un mois = les semaines dont le jeudi tombe dans ce mois (chaque semaine n'appartient qu'à un seul mois)
+  let f;
+  if(key==='cur') f=r=>r.w===curMon;
+  else if(key==='prev') f=r=>r.w===kpiAdd(curMon,-7);
+  else if(key==='4w') f=r=>r.w>=kpiAdd(curMon,-21);
+  else if(key==='12w') f=r=>r.w>=kpiAdd(curMon,-77);
+  else if(key==='m') f=r=>mon(r.w)===ym;
+  else if(key==='pm') f=r=>mon(r.w)===pm;
+  else if(key==='custom'){ const a=S.kpiFrom||kpiAdd(curMon,-28), b=S.kpiTo||today; const lo=kpiMonday(a<b?a:b), hi=kpiMonday(a<b?b:a); f=r=>r.w>=lo&&r.w<=hi; }
+  else f=()=>true;
+  const sel=rows.filter(f); const P=KPI_PERIODS.find(x=>x[0]===key);
+  const text=!sel.length?'Aucune semaine sur cette période':(sel.length===1?kpiWeekLabel(sel[0].w):`S${kpiIsoWeek(sel[0].w)} → S${kpiIsoWeek(sel[sel.length-1].w)} · ${kpiDm(sel[0].w)} – ${kpiDm(kpiAdd(sel[sel.length-1].w,6))} · ${sel.length} semaines`);
+  return {key,sel,label:P[1],short:P[2],sub:P[3],text};
+}
+function kpiSetPeriod(v){ S.kpiPeriod=v; if(v==='custom'){ const cm=kpiMonday(kpiParis(Date.now())); S.kpiFrom=S.kpiFrom||kpiAdd(cm,-28); S.kpiTo=S.kpiTo||kpiParis(Date.now()); } renderPage(); }
+function kpiSetDate(which,v){ if(!v) return; S[which==='from'?'kpiFrom':'kpiTo']=v; renderPage(); }
+function kpiCustomRow(per,cls){
+  if(per.key!=='custom') return '';
+  const today=kpiParis(Date.now());
+  return `<div class="${cls}"><span>Du</span><input type="date" value="${S.kpiFrom||''}" max="${today}" onchange="kpiSetDate('from',this.value)"><span>au</span><input type="date" value="${S.kpiTo||''}" max="${today}" onchange="kpiSetDate('to',this.value)"></div>`;
+}
+function kpiPeriodBar(per){
+  const chips=KPI_PERIODS.map(x=>`<span onclick="kpiSetPeriod('${x[0]}')" style="cursor:pointer;padding:5px 13px;border-radius:100px;font-size:12.5px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${per.key===x[0]?'var(--blue)':'var(--bg-primary)'};color:${per.key===x[0]?'#fff':'var(--text-secondary)'}">${x[1]}</span>`).join('');
+  return `<div style="margin-bottom:1rem"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span style="font-size:12.5px;color:var(--text-secondary);margin-right:2px">Période :</span>${chips}</div>${kpiCustomRow(per,'kpi-custom')}<div style="font-size:11.5px;color:var(--text-secondary);margin:6px 2px 0">${per.text} · semaines entières, du lundi au dimanche</div></div>`;
+}
 function kpiSetGroup(v){ S.kpiGroup=v; renderPage(); }
 async function kpiSaveSpend(week,val){
   const v=String(val).replace(',','.').trim(); D.kpiSpend=D.kpiSpend||{};
@@ -5163,7 +5197,7 @@ function pageKpiFb(){
   if(!ev.length&&!rows.some(r=>r.sp)){
     return top+`<div class="card" style="padding:1.5rem"><div style="font-size:15px;font-weight:600;margin-bottom:6px">Tes KPI se remplissent tout seuls</div><div style="font-size:13.5px;color:var(--text-secondary);line-height:1.6">Dès que tes prospects Facebook arrivent dans le CRM, ils apparaissent ici : combien de prospects par semaine, combien sont devenus clients (rendez-vous pris) et quelle publicité les a amenés. Il te suffira de saisir chaque semaine <strong>l'argent dépensé en publicité</strong>.</div></div>`+kpiLegacyDetails();
   }
-  const last4=rows.slice(-4);
+  const per=kpiPeriod(rows,curMon), last4=per.sel; // « last4 » = les semaines de la période choisie
   const sum=(a,f)=>a.reduce((t,r)=>t+(f(r)||0),0);
   const P4=sum(last4,r=>r.P), C4=sum(last4,r=>r.C), S4=sum(last4,r=>r.sp);
   // les coûts ne se calculent que sur les semaines où la dépense a été saisie
@@ -5173,7 +5207,7 @@ function pageKpiFb(){
   const need='<span style="color:var(--amber-dark)">Saisis tes dépenses ↓</span>';
   const card=(label,val,sub,tip,color)=>`<div class="stat-card" title="${tip}"><div class="stat-label">${label}</div><div class="stat-value"${color?` style="color:${color}"`:''}>${val}</div><div class="stat-sub">${sub||'&nbsp;'}</div></div>`;
   const cards=`<div class="stats-grid cols4" style="margin-bottom:.75rem">
-    ${card('Prospects',P4,'4 dernières semaines','Personnes arrivées par ton formulaire Facebook')}
+    ${card('Prospects',P4,per.sub,'Personnes arrivées par ton formulaire Facebook')}
     ${card('Clients',C4,'ont pris rendez-vous','Prospects de ces semaines qui ont pris rendez-vous','var(--green-dark)')}
     ${card('Taux de conversion',P4?f1(C4/P4*100).replace('.',',')+' %':'—','prospect → client','Clients ÷ prospects')}
     ${card('Dépensé',S4?kpiEur(S4):'—',S4?'':need,'Somme des dépenses saisies','var(--red-mid)')}
@@ -5182,13 +5216,13 @@ function pageKpiFb(){
     ${card('CPL · coût par prospect',(S4>0&&Pw)?kpiEur(S4/Pw):'—',(S4>0&&Pw)?'':need,'Dépenses ÷ prospects (sur les semaines où tu as saisi tes dépenses)')}
     ${card('CAC · coût d\'acquisition client',(S4>0&&Cw)?kpiEur(S4/Cw):'—',(S4>0&&Cw)?'':need,'Dépenses ÷ clients obtenus : ce que te coûte un client en publicité')}
     ${card('ROAS · retour sur dépenses',(S4>0&&CAw>0)?(est4?'≈ ':'')+f2(CAw/S4).replace('.',',')+'x':'—',(S4>0&&CAw>0)?'1 € de pub = '+f2(CAw/S4).replace('.',',')+' € de CA':(S4>0?'<span style="color:var(--amber-dark)">Il manque le CA de tes clients ↑</span>':need),'Chiffre d\'affaires des clients ÷ dépenses. Au-dessus de 1x, la pub rapporte plus qu\'elle ne coûte.')}
-    ${card('CA contracté',CA4?(est4?'≈ ':'')+kpiEur(CA4):'—',CA4?'Total depuis le début : '+(est4?'≈ ':'')+kpiEur(CAtot):(C4?'<span style="color:var(--amber-dark)">Renseigne ton panier moyen ↓</span>':''),'Montant des rendez-vous (réalisés ou planifiés) des clients venus de tes prospects')}
+    ${card('CA contracté',CA4?(est4?'≈ ':'')+kpiEur(CA4):'—',CA4?(per.key==='all'?per.sub.charAt(0).toUpperCase()+per.sub.slice(1):'Total depuis le début : '+(est4?'≈ ':'')+kpiEur(CAtot)):(C4?'<span style="color:var(--amber-dark)">Renseigne ton panier moyen ↓</span>':''),'Montant des rendez-vous (réalisés ou planifiés) des clients venus de tes prospects')}
   </div>
   ${true?`<div class="card" style="margin-bottom:1rem;padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:13px;flex:1;min-width:240px"><strong>Panier moyen estimé</strong> <span style="color:var(--text-secondary)">— utilisé pour le CA et le ROAS quand tu n'as pas enregistré la prestation d'un client (« Mes rendez-vous »). ${D.kpiPanier>0?`Chaque client sans prestation enregistrée est compté à <strong>${kpiEur(D.kpiPanier).replace(',00','')}</strong> (les montants que tu enregistres restent prioritaires). Les chiffres marqués « ≈ » incluent cette estimation. Vide la case pour la désactiver.`:personalised?`Sans montant saisi, seul le CA des prestations enregistrées est compté. Si tu ne les enregistres pas toujours, saisis ton prix habituel.`:catMax>0?`Si tu laisses vide, le CRM prend ta prestation la plus chère : <strong>${kpiEur(catMax).replace(',00','')}</strong>. <em>Cette estimation s'arrête dès que tu as mis tes propres prestations dans « Mon profil ».</em>`:'Ajoute tes prestations dans « Mon profil », ou saisis un montant (l\'estimation s\'arrête dès que ton profil est rempli).'}</span></span>
     <span><input type="number" step="1" min="0" value="${D.kpiPanier||''}" placeholder="${catMax>0?catMax:'ex : 129'}" onchange="kpiSavePanier(this.value)" style="width:90px;padding:6px 8px;border:0.5px solid var(--gray-border-mid);border-radius:6px;font-size:13px;text-align:right"> <span style="font-size:13px">€</span></span></div>`:''}
   <div style="font-size:11.5px;color:var(--text-secondary);margin:-6px 2px 1rem">${nq.size?`${nq.size} prospect(s) non qualifié(s) sur la période · `:''}Les coûts ne se calculent que sur les semaines où tu as saisi « Dépensé ».</div>`;
   // graphique : 8 dernières semaines
-  const g=rows.slice(-8), mx=Math.max(1,...g.map(r=>r.P));
+  const g=last4.length>8?last4:rows.slice(-8), mx=Math.max(1,...g.map(r=>r.P));
   const chart=`<div class="card" style="margin-bottom:1rem"><div class="card-head"><span class="card-title">Prospects et clients par semaine</span><span style="font-size:11.5px;color:var(--text-secondary)"><span style="display:inline-block;width:10px;height:10px;background:#9DB8E8;border-radius:2px;margin-right:4px"></span>Prospects <span style="display:inline-block;width:10px;height:10px;background:var(--green-mid,#2d7a2d);border-radius:2px;margin:0 4px 0 10px"></span>Clients</span></div>
     <div style="display:flex;align-items:flex-end;gap:10px;height:150px;padding:14px 18px 6px;overflow-x:auto">${g.map(r=>`<div style="flex:1;min-width:46px;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="display:flex;align-items:flex-end;gap:3px;height:112px"><div title="${r.P} prospects" style="width:16px;height:${Math.max(2,r.P/mx*112)}px;background:#9DB8E8;border-radius:3px 3px 0 0"></div><div title="${r.C} clients" style="width:16px;height:${Math.max(r.C?2:0,r.C/mx*112)}px;background:var(--green-mid,#2d7a2d);border-radius:3px 3px 0 0"></div></div><div style="font-size:10.5px;color:var(--text-secondary);white-space:nowrap">S${kpiIsoWeek(r.w)}</div><div style="font-size:10.5px;font-weight:600">${r.P} · ${r.C}</div></div>`).join('')}</div></div>`;
   // tableau hebdo
@@ -5201,9 +5235,8 @@ function pageKpiFb(){
     <div class="tbl-wrap"><table><thead><tr><th>Semaine</th><th class="td-num">Prospects</th><th class="td-num">Clients</th><th class="td-num" title="Clients ÷ prospects">Taux de conv.</th><th class="td-num">Dépensé</th><th class="td-num" title="Coût par prospect">CPL</th><th class="td-num" title="Coût d'acquisition client : dépenses ÷ clients">CAC</th><th class="td-num" title="Rendez-vous réalisés ou planifiés">CA contracté</th><th class="td-num" title="CA contracté des clients de la semaine ÷ dépenses de la semaine">ROAS</th></tr></thead><tbody>${tbody}</tbody></table></div>
     <div style="padding:10px 16px 14px;font-size:12px;color:var(--text-secondary);line-height:1.5">Chaque semaine va du lundi au dimanche. <strong>Clients</strong> = prospects arrivés cette semaine-là qui ont pris rendez-vous (ce nombre peut encore augmenter après la semaine). <strong>CA contracté</strong> = montant des rendez-vous (réalisés ou déjà planifiés) de ces clients ; le <strong>ROAS</strong> de la semaine = ce CA ÷ l'argent dépensé cette semaine-là, <u>même si la prestation a lieu des semaines plus tard</u> : il est toujours rattaché à la semaine où le prospect est arrivé, donc aux dépenses de cette semaine-là. <strong>Dépensé</strong> = le montant de ta pub de la semaine, lu dans ton Gestionnaire de publicités.</div></div>`;
   // récap par publicité
-  const range=S.kpiRange||'4w', grp=S.kpiGroup||'creation';
-  const prevMon=kpiAdd(curMon,-7), from4=kpiAdd(curMon,-21);
-  const inR=wk=>range==='cur'?wk===curMon:range==='prev'?wk===prevMon:range==='4w'?wk>=from4:true;
+  const range=per.key, grp=S.kpiGroup||'creation';
+  const selW=new Set(last4.map(r=>r.w)), inR=wk=>selW.has(wk);
   const groups=new Map();
   ev.filter(x=>inR(x.wk)).forEach(x=>{ const k=String((['prestation','ville'].includes(grp)?x.c[grp]:x.e[grp])||'').trim()||'Non renseigné'; if(!groups.has(k)) groups.set(k,new Map()); groups.get(k).set(String(x.c.id),x.c); });
   const adRows=[...groups.entries()].map(([k,m])=>{ const cl=[...m.values()]; const C=cl.filter(c=>c.status==='client').length; return {k,P:cl.length,C,rate:cl.length?C/cl.length*100:0}; }).sort((a,b)=>b.C-a.C||b.P-a.P);
@@ -5211,35 +5244,34 @@ function pageKpiFb(){
   const chip=(cur,set,v,l)=>`<span onclick="${set}('${v}')" style="cursor:pointer;padding:4px 11px;border-radius:100px;font-size:12px;font-weight:500;border:0.5px solid var(--gray-border-mid);background:${cur===v?'var(--blue)':'var(--bg-primary)'};color:${cur===v?'#fff':'var(--text-secondary)'}">${l}</span>`;
   const best=adRows.length&&adRows[0].C>0?adRows[0].k:null;
   const recap=`<div class="card" style="margin-bottom:1rem"><div class="card-head" style="flex-wrap:wrap;gap:8px"><span class="card-title">Qu'est-ce qui amène des clients ?</span></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 1rem 6px">${chip(range,'kpiSetRange','cur','Cette semaine')}${chip(range,'kpiSetRange','prev','Semaine dernière')}${chip(range,'kpiSetRange','4w','4 dernières semaines')}${chip(range,'kpiSetRange','all','Tout')}</div>
+    <div style="padding:0 1rem 8px;font-size:12px;color:var(--text-secondary)">Période : <strong>${per.label.toLowerCase()}</strong> (à changer tout en haut de la page)</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;padding:0 1rem 10px"><span style="font-size:12px;color:var(--text-secondary);align-self:center">Regrouper par :</span>${chip(grp,'kpiSetGroup','creation','Publicité')}${chip(grp,'kpiSetGroup','ensemble','Ensemble')}${chip(grp,'kpiSetGroup','campagne','Campagne')}${chip(grp,'kpiSetGroup','prestation','Service demandé')}${chip(grp,'kpiSetGroup','ville','Ville')}</div>
     <div class="tbl-wrap"><table><thead><tr><th>${({creation:'Publicité',ensemble:'Ensemble de publicités',campagne:'Campagne',prestation:'Service demandé',ville:'Ville'})[grp]||'Publicité'}</th><th class="td-num">Prospects</th><th class="td-num">Clients</th><th class="td-num">Conv.</th><th style="min-width:140px"></th></tr></thead>
     <tbody>${adRows.length===0?'<tr><td colspan="5" class="empty">Aucun prospect sur cette période</td></tr>':adRows.map(r=>`<tr><td style="max-width:320px"><strong>${esc(r.k)}</strong>${r.k===best?' <span title="La plus de clients sur la période" style="font-size:11px">🏆</span>':''}</td><td class="td-num">${r.P}</td><td class="td-num"><strong style="color:var(--green-dark)">${r.C}</strong></td><td class="td-num">${f1(r.rate).replace('.',',')}%</td>
       <td><div style="height:10px;background:#E7EEF9;border-radius:5px;position:relative;width:100%"><div style="position:absolute;left:0;top:0;height:10px;width:${r.P/mxA*100}%;background:#9DB8E8;border-radius:5px"></div><div style="position:absolute;left:0;top:0;height:10px;width:${r.C/mxA*100}%;background:var(--green-mid,#2d7a2d);border-radius:5px"></div></div></td></tr>`).join('')}</tbody></table></div>
     <div style="padding:10px 16px 14px;font-size:12px;color:var(--text-secondary);line-height:1.5">Compte les prospects arrivés pendant la période, et ceux qui ont pris rendez-vous depuis. Une publicité avec peu de prospects ne permet pas encore de conclure.</div></div>`;
   const hintKpi=(est4&&estimating)?`<div style="background:#FFF4E5;color:#8A4B00;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;margin-bottom:1rem">⚠️ <strong>Une partie de ton CA est estimée</strong> (signalée par « ≈ »), parce que certains clients n'ont pas de prestation enregistrée. Pour un chiffre exact : ajoute chaque rendez-vous dans l'<strong>agenda</strong> avec son prix.</div>`:'';
-  if(isPhone()) return top+kpiPhone({rows,curMon,chart,adRows,mxA,best,chip,range,grp,nq,estimating,personalised,catMax,panier})+kpiLegacyDetails();
-  return top+cards+hintKpi+chart+table+recap+kpiLegacyDetails();
+  if(isPhone()) return top+kpiPhone({rows,curMon,chart,adRows,mxA,best,chip,range,grp,nq,estimating,personalised,catMax,panier,per})+kpiLegacyDetails();
+  return top+kpiPeriodBar(per)+cards+hintKpi+chart+table+recap+kpiLegacyDetails();
 }
 function kpiPRange(v){ S.kpiPRange=v; renderPage(); }
 function kpiToggleMore(){ S.kpiMore=!S.kpiMore; renderPage(); if(S.kpiMore){ const el=document.getElementById('kp-more'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); } }
 function kpiPhone(o){
-  const {rows,curMon,chart,adRows,mxA,best,chip,range,grp,nq,estimating,personalised,catMax,panier}=o;
+  const {rows,curMon,chart,adRows,mxA,best,chip,range,grp,nq,estimating,personalised,catMax,panier,per}=o;
   const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  const pr=S.kpiPRange||'4w', prevMon=kpiAdd(curMon,-7);
-  const sel=pr==='cur'?rows.filter(r=>r.w===curMon):pr==='prev'?rows.filter(r=>r.w===prevMon):rows.slice(-4);
+  const pr=per.key, sel=per.sel;
   const sum=(a,f)=>a.reduce((t,r)=>t+(f(r)||0),0);
   const P=sum(sel,r=>r.P), C=sum(sel,r=>r.C), SP=sum(sel,r=>r.sp), CA=sum(sel,r=>r.ca), est=sel.some(r=>r.est);
   const lw=sel.filter(r=>r.sp>0), Pw=sum(lw,r=>r.P), Cw=sum(lw,r=>r.C), CAw=sum(lw,r=>r.ca);
   const cpl=(SP>0&&Pw)?kpiEur(SP/Pw):'—', cac=(SP>0&&Cw)?kpiEur(SP/Cw):'—';
   const roas=(SP>0&&CAw>0)?(est?'≈ ':'')+f2(CAw/SP).replace('.',',')+'x':'—';
   const rate=P?f1(C/P*100).replace('.',',')+' %':'—';
-  const tab=(v,l)=>`<button class="kp-tab${pr===v?' on':''}" onclick="kpiPRange('${v}')">${l}</button>`;
+  const tab=(v,l)=>`<button class="kp-tab${pr===v?' on':''}" onclick="kpiSetPeriod('${v}')">${l}</button>`;
   const need=`<button class="kp-need" onclick="if(!S.kpiMore)kpiToggleMore();else document.getElementById('kp-wk')&&document.getElementById('kp-wk').scrollIntoView({behavior:'smooth'})">Saisis tes dépenses ↓</button>`;
   const big=(l,v,sub,col)=>`<div class="kp-big"><div class="kp-v"${col?` style="color:${col}"`:''}>${v}</div><div class="kp-l">${l}</div>${sub?`<div class="kp-s">${sub}</div>`:''}</div>`;
   const small=(l,v,col)=>`<div class="kp-sm"><div class="kp-sv"${col?` style="color:${col}"`:''}>${v}</div><div class="kp-sl">${l}</div></div>`;
   const top3=`<div class="kp-card">
-    <div class="kp-tabs">${tab('cur','Cette semaine')}${tab('prev','Sem. dernière')}${tab('4w','4 semaines')}</div>
+    <div class="kp-tabs">${KPI_PERIODS.map(x=>tab(x[0],x[2])).join('')}</div>${kpiCustomRow(per,'kp-custom')}<div class="kp-per">${per.text}</div>
     <div class="kp-row3">${small('Prospects',P)}${small('Coût par prospect',cpl)}${small('Dépensé',SP>0?kpiEur(SP):'—')}</div>
     ${SP>0?'':`<div class="kp-needwrap">${need}</div>`}
     <div class="kp-clients"><div><div class="kp-ct">Clients</div><div class="kp-cs">${C} ${C>1?'ont':'a'} pris rendez-vous</div></div><div class="kp-cn">${C}<span>${rate}</span></div></div>
@@ -5259,7 +5291,7 @@ function kpiPhone(o){
     <div class="kp-card kp-pad"><div class="kp-h">Panier moyen estimé</div><div class="kp-note">Sert au CA et au ROAS quand tu n'as pas enregistré la prestation d'un client. Vide = désactivé.</div><div class="kp-wkin"><label>Panier moyen</label><span><input type="number" inputmode="decimal" step="1" min="0" value="${D.kpiPanier||''}" placeholder="${catMax>0?catMax:'ex : 129'}" onchange="kpiSavePanier(this.value)"> €</span></div></div>
     ${chart.replace('class="card" style="margin-bottom:1rem"','class="kp-card" style="padding:4px 0 0"')}
     <div class="kp-card kp-pad"><div class="kp-h">Qu'est-ce qui amène des clients ?</div>
-      <div class="kp-chips">${chip(range,'kpiSetRange','cur','Cette semaine')}${chip(range,'kpiSetRange','prev','Semaine dernière')}${chip(range,'kpiSetRange','4w','4 sem.')}${chip(range,'kpiSetRange','all','Tout')}</div>
+      <div class="kp-note" style="margin:0 0 8px">Période : <b>${per.label.toLowerCase()}</b> (à changer en haut de la page)</div>
       <div class="kp-chips"><span class="kp-note" style="margin:0">Par :</span>${chip(grp,'kpiSetGroup','creation','Publicité')}${chip(grp,'kpiSetGroup','ensemble','Ensemble')}${chip(grp,'kpiSetGroup','campagne','Campagne')}${chip(grp,'kpiSetGroup','prestation','Service')}${chip(grp,'kpiSetGroup','ville','Ville')}</div>
       ${ads}</div>
     ${nq.size?`<div class="kp-note" style="padding:0 4px">${nq.size} prospect(s) non qualifié(s) sur la période.</div>`:''}
