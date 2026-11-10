@@ -3743,7 +3743,8 @@ function pagePrestationsHist(){
         </tr>`).join('')}
       </tbody>
     </table></div>
-  </div>` : ''}`;
+  </div>` : ''}
+  <div style="margin:1.5rem 0 2rem;text-align:center"><button class="btn" style="color:var(--red-mid)" onclick="delCl('${c.id}')">🗑 Supprimer ce client</button></div>`;
 }
 
 function mIntervention(){
@@ -3852,7 +3853,7 @@ function mIntervention(){
     </div>
   </div>
 
-  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveIntervention()">${isEdit?'Modifier':'Enregistrer'}</button></div>`;
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button>${isEdit?`<button class="btn-cancel" style="color:var(--red-mid);border-color:var(--red-mid);white-space:nowrap;padding-left:12px;padding-right:12px" onclick="delIntervention('${S.form.editIntervId}')">🗑 Supprimer</button>`:''}<button class="btn-save" onclick="saveIntervention()">${isEdit?'Modifier':'Enregistrer'}</button></div>`;
 }
 
 async function saveIntervention(){
@@ -4193,7 +4194,7 @@ async function delIntervention(id){
   }
   D.interventions = D.interventions.filter(i=>i.id!==id&&i.id!=id);
   if(S.selectedInterv===id){ S.selectedInterv=null; S.selectedIntervPos=null; }
-  render();
+  closeModal(); render();
 }
 
 function getClientsForMonth(year, month){
@@ -4477,11 +4478,12 @@ const SMX_KINDS=[
   {k:'lead_confirm',grp:'Nouveau prospect',title:'Confirmation de la demande',when:'Tout de suite après le formulaire',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, merci pour votre demande ! Réservez ici : {lien_rdv} - {entreprise}'},
   {k:'lead_6h',grp:'Nouveau prospect',title:'Lien pour prendre rendez-vous',when:'6 h après le formulaire (si pas de RDV)',vars:['prenom','entreprise','lien_rdv'],def:'Bonjour {prenom}, réservez en 1 minute : {lien_rdv} - {entreprise}'},
   {k:'lead_promo',grp:'Nouveau prospect',title:'Relance avec code promo',when:'24 h après le 1er SMS (si toujours pas de RDV)',vars:['prenom','entreprise','lien_rdv','code_promo'],def:'{prenom}, -10% sur votre 1ère prestation (code {code_promo}) : {lien_rdv} - {entreprise}'},
+  {k:'booking_confirm',grp:'Rendez-vous',title:'Confirmation d\'une réservation en ligne',when:'Tout de suite après la réservation sur ta page en ligne',vars:['prenom','entreprise','date','heure','heure_fin','adresse','telephone'],def:'Bonjour {prenom}, votre rendez-vous avec {entreprise} est confirmé : {date} entre {heure} et {heure_fin}.'},
   {k:'reminder_72h',grp:'Rendez-vous',title:'Rappel 3 jours avant',when:'72 h avant le rendez-vous',vars:['prenom','entreprise','date','heure','adresse','telephone'],def:'Rappel : votre rendez-vous avec {entreprise} est prévu {date} à {heure}. À bientôt !'},
   {k:'reminder_24h',grp:'Rendez-vous',title:'Rappel la veille',when:'24 h avant le rendez-vous',vars:['prenom','entreprise','date','heure','adresse','telephone'],def:'Rappel : rendez-vous demain à {heure} avec {entreprise}. Adresse : {adresse}. À demain !'},
   {k:'review',manual:true,grp:'Après la prestation',title:'Demande d\'avis Google (manuelle)',when:'Jamais automatique : tu l\'envoies toi-même avec le bouton « ⭐ Demander un avis » (Mes rendez-vous / Agenda)',vars:['prenom','entreprise','lien_avis'],def:'Merci {prenom} ! Votre avis compte beaucoup pour {entreprise} : {lien_avis}'},
 ];
-const SMX_VARNAMES={telephone:'Mon téléphone',prenom:'Prénom',entreprise:'Entreprise',lien_rdv:'Lien RDV',code_promo:'Code promo',lien_avis:'Lien avis',date:'Date du RDV',heure:'Heure du RDV',adresse:'Adresse'};
+const SMX_VARNAMES={telephone:'Mon téléphone',prenom:'Prénom',entreprise:'Entreprise',lien_rdv:'Lien RDV',code_promo:'Code promo',lien_avis:'Lien avis',date:'Date du RDV',heure:'Heure du RDV',heure_fin:'Fin du créneau',adresse:'Adresse'};
 const SMX_REASONS={rdv_pris:'RDV pris',statut_client:'Devenu client',statut_non_qualifie:'Non qualifié',rdv_supprime:'RDV supprimé',rdv_non_planifie:'RDV modifié',rdv_non_realise:'RDV non réalisé',sms_desactive:'SMS désactivé',pas_de_compte_sms:'Pas d\'abonnement',lien_rdv_manquant:'Lien de RDV manquant',lien_avis_manquant:'Lien d\'avis manquant',code_promo_manquant:'Code promo manquant',credits_epuises:'Plus de SMS',numero_invalide:'Numéro invalide',numero_test_invalide:'Numéro de test invalide',client_introuvable:'Client introuvable',test:'Test',avis_manuel:'Avis : passé en manuel',ne_plus_contacter:'Désinscrit des SMS',campagne_annulee:'Campagne annulée',expediteur_non_approuve:'Nom d\'expéditeur pas encore approuvé'};
 const SMX_GSM="@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
 const SMX_MAP={'’':"'",'‘':"'",'“':'"','”':'"','«':'"','»':'"','–':'-','—':'-','…':'...','ê':'e','â':'a','î':'i','ô':'o','û':'u','ë':'e','ï':'i','œ':'oe','À':'A','Â':'A','Ê':'E','È':'E','Î':'I','Ô':'O','Ù':'U','Û':'U'};
@@ -4748,11 +4750,11 @@ async function smxAskReview(id){
 function smxTpl(k){ const d=SMX_KINDS.find(x=>x.k===k); const t=(S.sms.templates||{})[k]||{}; return {enabled:t.enabled!==undefined?t.enabled:true, body:(t.body&&t.body.trim())?t.body:d.def}; }
 function smxPreview(k){
   const s=S.sms.settings||{};
-  const v={prenom:'Marie',nom:'Marie Dupont',entreprise:s.entreprise||'Mon entreprise',lien_rdv:s.booking_url||'https://…',lien_avis:s.review_url||'https://…',code_promo:s.promo_code||'CODE10',date:'jeudi 15 octobre',heure:'10h00',adresse:'12 rue des Lilas',telephone:(s.phone_pro||'').trim()};
+  const v={prenom:'Marie',nom:'Marie Dupont',entreprise:s.entreprise||'Mon entreprise',lien_rdv:s.booking_url||'https://…',lien_avis:s.review_url||'https://…',code_promo:s.promo_code||'CODE10',date:'jeudi 15 octobre',heure:'10h00',heure_fin:'12h00',adresse:'12 rue des Lilas',telephone:(s.phone_pro||'').trim()};
   let body=smxTpl(k).body;
   const ph=(s.phone_pro||'').trim();   // même règle que le moteur : numéro ajouté sans jamais coûter un SMS de plus
-  if(ph&&!body.includes('{telephone}')&&['reminder_72h','reminder_24h','lead_confirm','lead_6h','lead_promo'].includes(k)){
-    const vs=k.startsWith('reminder_')?[' Pour annuler ou modifier : '+ph,' Annuler : '+ph]:[' Une question ? '+ph,' Tel : '+ph];
+  if(ph&&!body.includes('{telephone}')&&['reminder_72h','reminder_24h','booking_confirm','lead_confirm','lead_6h','lead_promo'].includes(k)){
+    const vs=(k.startsWith('reminder_')||k==='booking_confirm')?[' Pour annuler ou modifier : '+ph,' Annuler : '+ph]:[' Une question ? '+ph,' Tel : '+ph];
     const base=smxGsm(body.replace(/\{(\w+)\}/g,(m,x)=>v[x]??'')).replace(/\s+/g,' ').trim(), bs=smxSegments(base);
     const ok=vs.find(x=>smxSegments(smxGsm(base+x))<=bs); if(ok) body=body+ok;
   }
@@ -5009,7 +5011,7 @@ function mClient(){
   <div class="field"><label>CA total de ce client (€)</label><input type="number" min="0" step="0.01" value="${S.form.ca!=null&&S.form.ca!==''?S.form.ca:''}" oninput="S.form.ca=this.value" placeholder="ex : 340">
     <div style="font-size:11.5px;color:var(--text-secondary);margin-top:4px;line-height:1.45">Pour un <strong>ancien client</strong> : saisis directement le total qu'il t'a payé, sans re-saisir chaque prestation. Ses prochains rendez-vous s'ajouteront automatiquement.</div></div>
   <div class="field"><label>Informations supplémentaires</label><textarea oninput="S.form.notes=this.value" placeholder="Préférences, notes, allergies, véhicules habituels...">${S.form.notes||''}</textarea></div>
-  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn-save" onclick="saveClient()">Enregistrer</button></div>`;
+  <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button>${isEdit?`<button class="btn-cancel" style="color:var(--red-mid);border-color:var(--red-mid);white-space:nowrap;padding-left:12px;padding-right:12px" onclick="delCl('${S.form.editId}')">🗑 Supprimer</button>`:''}<button class="btn-save" onclick="saveClient()">Enregistrer</button></div>`;
 }
 function mDep(){
   const isEdit = !!S.form.editDepId;
@@ -5428,7 +5430,15 @@ async function saveKpi(){
   closeModal();render();
 }
 
-async function delCl(id){if(!confirm('Supprimer ?'))return;await sb.from('clients').delete().eq('id',id);D.clients=D.clients.filter(c=>c.id!==id);render()}
+async function delCl(id){
+  const c=D.clients.find(x=>String(x.id)===String(id)); const n=c?D.interventions.filter(i=>String(i.client_id)===String(id)||i.client_name===c.name).length:0;
+  if(!confirm('Supprimer '+(c&&c.name?c.name:'ce client')+' ?'+(n?'\n\nSes '+n+' prestation(s) / rendez-vous restent dans ton agenda et ta comptabilité.':'')))return;
+  const{error}=await sb.from('clients').delete().eq('id',id);
+  if(error){ alert('Erreur : '+error.message); return; }
+  D.clients=D.clients.filter(x=>String(x.id)!==String(id));
+  if(String(S.crmClientId)===String(id)){ S.crmClientId=null; S.clientDetailTab=null; }
+  closeModal(); render();
+}
 function editDep(id){
   const d = D.depenses.find(x=>x.id===id||x.id==id);
   if(!d) return;
