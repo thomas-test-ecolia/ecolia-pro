@@ -3319,7 +3319,8 @@ function pageClientDetail(clientId){
           </tr>`).join('')}
         </tbody></table>`
     }
-  </div>`:''}`;
+  </div>`:''}
+  <div style="margin:1.5rem 0 2rem;text-align:center"><button class="btn" style="color:var(--red-mid)" onclick="delCl('${c.id}')">🗑 Supprimer ce client</button></div>`;
 }
 
 // ── Enregistrement automatique : chaque réglage s'enregistre tout seul peu après la dernière modification ──
@@ -3743,8 +3744,7 @@ function pagePrestationsHist(){
         </tr>`).join('')}
       </tbody>
     </table></div>
-  </div>` : ''}
-  <div style="margin:1.5rem 0 2rem;text-align:center"><button class="btn" style="color:var(--red-mid)" onclick="delCl('${c.id}')">🗑 Supprimer ce client</button></div>`;
+  </div>` : ''}`;
 }
 
 function mIntervention(){
@@ -3937,7 +3937,7 @@ async function saveIntervention(){
 
   if(!clientId){ alert('Sélectionne un client.'); return; }
 
-  const statut = S.form.statut || S.form.defaultStatut || 'realise';
+  const statut = (S.form.statut&&S.form.statut!=='confirme') ? S.form.statut : (S.form.defaultStatut || 'realise');
   const prestation = S.form.prestation==='Autre'?(S.form.prestationLibre||'Autre'):S.form.prestation||'';
   const row={
     user_id:currentUser.id,
@@ -5365,7 +5365,7 @@ async function delOption(id){
 function openModal(t){
   cleanAllData();
   S.modal=t;
-  S.form={type:'nettoyage',categorie:CAT_DEP[0],moyen:MOYENS[0],status:'new',source:'autre',statut:'confirme',prenom:'',nom:'',adresse:'',prix:'',telephone:'',notes:'',docType:'facture',lignes:[{nom:'',description:'',quantite:1,prix:0}],tva:0,date:new Date().toISOString().slice(0,10)};
+  S.form={type:'nettoyage',categorie:CAT_DEP[0],moyen:MOYENS[0],status:'new',source:'autre',prenom:'',nom:'',adresse:'',prix:'',telephone:'',notes:'',docType:'facture',lignes:[{nom:'',description:'',quantite:1,prix:0}],tva:0,date:new Date().toISOString().slice(0,10)};
   const mp={client:mClient,depense:mDep,kpi:mKpi,newdoc:mNewDoc,prestation:mPrestation,option:mOption,intervention:mIntervention,task:mTask};
   $('modal-content').innerHTML=(mp[t]||mClient)();
   $('modal-overlay').classList.add('open');
